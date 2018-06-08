@@ -32,6 +32,8 @@ add `openidconnect` to the list of plugins :
 
     ckan.plugins = ... openidconnect
 
+Restart your CKAN instance.
+
 ## Configuration
 
 The following configuration options are available for _ckanext-openidconnect_:
@@ -45,3 +47,5 @@ e.g.
 An additional option `ckan.openidconnect.insecure_transport` (boolean, default `False`)
 may be set to `True` for local development or automated tests to permit insecure communications
 with an authorization server. Never set this option in production!
+
+Restart your CKAN instance after any configuration changes.
