@@ -21,6 +21,11 @@ class OpenIDConnectPlugin(p.SingletonPlugin):
         if not self.userinfo_endpoint:
             log.warning("Configuration value ckan.openidconnect.userinfo_endpoint has not been set")
 
+        if tk.asbool(config.get('ckan.openidconnect.insecure_transport')):
+            import os
+            os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+            log.warning("Allowing OAuth2 over insecure HTTP")
+
     def identify(self):
         if tk.c.user:
             return
