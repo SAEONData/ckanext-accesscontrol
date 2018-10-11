@@ -7,7 +7,7 @@ version = '0.2'
 setup(
     name='ckanext-openidconnect',
     version=version,
-    description='An extension enabling authenticated access to the CKAN API using OpenID Connect',
+    description='An extension enabling authentication and authorization via OpenID Connect',
     url='https://github.com/SAEONData/ckanext-openidconnect',
     author='Mark Jacobson',
     author_email='mark@saeon.ac.za',

@@ -3,12 +3,14 @@
 [![Travis CI](https://travis-ci.org/SAEONData/ckanext-openidconnect.svg?branch=master)](https://travis-ci.org/SAEONData/ckanext-openidconnect)
 [![Coverage](https://coveralls.io/repos/SAEONData/ckanext-openidconnect/badge.svg)](https://coveralls.io/r/SAEONData/ckanext-openidconnect)
 
-An extension for [CKAN](https://ckan.org) enabling authentication via an
+An extension for [CKAN](https://ckan.org) enabling authentication and authorization via an
 OpenID Connect provider.
 
 ## Requirements
 
 This extension has been developed and tested with CKAN version 2.7.4.
+
+Redis is required for the verification of OAuth2 login callbacks.
 
 ## Installation
 
@@ -36,16 +38,21 @@ Restart your CKAN instance.
 
 ## Configuration
 
-The following configuration options are available for _ckanext-openidconnect_:
+The following configuration options are available for _ckanext-openidconnect_.
+Where a default is not defined, a value **must** be set in the configuration file.
 
-    ckan.openidconnect.userinfo_endpoint = <url>
-
-e.g.
-
-    ckan.openidconnect.userinfo_endpoint = https://your.auth.server.com/connect/userinfo
-
-An additional option `ckan.openidconnect.insecure_transport` (boolean, default `False`)
-may be set to `True` for local development or automated tests to permit insecure communications
-with an authorization server. Never set this option in production!
+| Option | Default | Description |
+| ------ | ------- | ----------- |
+| ckan.openidconnect.userinfo_endpoint      | | Auth service user info endpoint (URL).
+| ckan.openidconnect.authorization_endpoint | | Auth service authorization endpoint (URL).
+| ckan.openidconnect.token_endpoint         | | Auth service token endpoint (URL).
+| ckan.openidconnect.client_id              | | The ID of the client resource that represents the CKAN instance in the auth service.
+| ckan.openidconnect.client_secret          | | The client secret specified for the above client resource.
+| ckan.openidconnect.scopes                 | | Space-separated list of scopes to which the CKAN instance requires access; must include at least `openid`.
+| ckan.openidconnect.register_url           | | Auth service URL for new user registration.
+| ckan.openidconnect.reset_url              | | Auth service URL for resetting a password.
+| ckan.openidconnect.edit_url               | | Auth service URL for editing a user profile.
+| ckan.openidconnect.insecure_transport     | False | Set to True for development / testing to permit insecure communication with an auth server. Never set this option in production!
+| ckan.openidconnect.login_wait_time_seconds | 60 | Maximum time in seconds to wait for a callback from the auth server after login is initiated.
 
 Restart your CKAN instance after any configuration changes.
