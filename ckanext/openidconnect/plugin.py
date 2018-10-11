@@ -1,65 +1,28 @@
 # encoding: utf-8
 
-import logging
 import ckan.plugins as p
-import ckan.plugins.toolkit as tk
-from requests_oauthlib import OAuth2Session
-from requests import HTTPError
-
-log = logging.getLogger(__name__)
+from ckanext.openidconnect.openidconnect import OpenIDConnect
 
 
 class OpenIDConnectPlugin(p.SingletonPlugin):
     """
-    Plugin providing authentication using OpenID Connect.
+    Plugin providing authentication, authorization and user management via an
+    OpenIDConnect / OAuth2 server.
     """
-    p.implements(p.IAuthenticator)
-    p.implements(p.IConfigurable)
+    p.implements(p.IRoutes, inherit=True)
+    p.implements(p.IAuthenticator, inherit=True)
 
-    def configure(self, config):
-        self.userinfo_endpoint = config.get('ckan.openidconnect.userinfo_endpoint')
-        if not self.userinfo_endpoint:
-            log.warning("Configuration value ckan.openidconnect.userinfo_endpoint has not been set")
+    def __init__(self, **kwargs):
+        self.openidconnect = OpenIDConnect()
 
-        if tk.asbool(config.get('ckan.openidconnect.insecure_transport')):
-            import os
-            os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
-            log.warning("Allowing OAuth2 over insecure HTTP")
+    def before_map(self, m):
+        controller = 'ckanext.openidconnect.controller:OpenIDConnectController'
+        m.connect('/user/login', action='login', controller=controller)
+        m.connect('/openidconnect/callback', action='callback', controller=controller)
+        m.redirect('/user/register', self.openidconnect.register_url)
+        m.redirect('/user/reset', self.openidconnect.reset_url)
+        m.redirect('/user/edit', self.openidconnect.edit_url)
+        return m
 
     def identify(self):
-        if tk.c.user:
-            return
-
-        if not self.userinfo_endpoint:
-            return
-
-        auth_header = tk.request.headers.get('Authorization')
-        if auth_header and auth_header.startswith('Bearer '):
-            token = {'access_token': auth_header[len('Bearer '):]}
-        else:
-            log.error("Invalid authorization header; expecting bearer token")
-            return
-
-        oauth2session = OAuth2Session(token=token)
-        response = oauth2session.get(self.userinfo_endpoint)
-        try:
-            response.raise_for_status()
-            claims = response.json()
-            openid_user = claims.get('sub')
-            if not openid_user:
-                raise ValueError("Missing OpenID user ID")
-
-        except (HTTPError, ValueError) as e:
-            log.error("Invalid response from authorization server: " + str(e))
-            return
-
-        try:
-            tk.get_action('user_show')({}, {'id': openid_user})
-            log.debug("Found user record for OpenID user %s", openid_user)
-
-        except tk.ObjectNotFound:
-            log.info("Automatically creating user record for OpenID user %s", openid_user)
-            schema = {'id': [unicode], 'name': [unicode]}
-            tk.get_action('user_create')({'schema': schema}, {'id': openid_user, 'name': openid_user})
-
-        tk.c.user = openid_user
+        self.openidconnect.identify()
