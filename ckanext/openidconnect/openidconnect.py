@@ -4,7 +4,6 @@ import logging
 import os
 from requests_oauthlib import OAuth2Session
 from six.moves.urllib.parse import urljoin
-from datetime import datetime, timedelta
 
 import ckan.plugins.toolkit as tk
 from ckan.common import _, config
@@ -47,28 +46,36 @@ class OpenIDConnect(object):
         self.reset_url = get_option('ckan.openidconnect.reset_url')
         self.edit_url = get_option('ckan.openidconnect.edit_url')
         if self._missing:
-            raise OpenIDConnectError(_("Missing configuration options(s): %s"), ', '.join(self._missing))
-
-        self.login_wait_time_seconds = tk.asint(config.get('ckan.openidconnect.login_wait_time_seconds', 60))
+            raise OpenIDConnectError("Missing configuration options(s): %s", ', '.join(self._missing))
 
     def login(self):
+        log.debug("Login initiated")
         oauth2session = OAuth2Session(client_id=self.client_id, scope=self.scopes, redirect_uri=self.redirect_url)
-        authorization_url, state = oauth2session.authorization_url(self.authorization_endpoint)#, state=state_id)
+        authorization_url, state = oauth2session.authorization_url(self.authorization_endpoint)
         self._save_state(state)
 
         tk.redirect_to(authorization_url)
 
     def callback(self):
-        # todo: check for error param(s)
-        auth_code = tk.request.params['code']
-        state = tk.request.params['state']
-        self._verify_state(state)
+        log.debug("Callback from auth server")
+        try:
+            error = tk.request.params.get('error')
+            if error:
+                error_description = tk.request.params.get('error_description', '')
+                raise OpenIDConnectError(_("Authorization server returned an error: %s %s") % (error, error_description))
 
-        oauth2session = OAuth2Session(client_id=self.client_id, redirect_uri=self.redirect_url)
-        token = oauth2session.fetch_token(self.token_endpoint, client_secret=self.client_secret, code=auth_code)
-        user_id, user_data = self._request_userinfo(token)
-        self._persist_user(user_id, user_data)
-        self._remember_login(user_id)
+            auth_code = tk.request.params['code']
+            state = tk.request.params['state']
+            self._verify_state(state)
+
+            oauth2session = OAuth2Session(client_id=self.client_id, redirect_uri=self.redirect_url)
+            token = oauth2session.fetch_token(self.token_endpoint, client_secret=self.client_secret, code=auth_code)
+            user_id, user_data = self._request_userinfo(token)
+            self._persist_user(user_id, user_data)
+            self._remember_login(user_id)
+        except Exception, e:
+            log.error(str(e))
+            tk.h.flash_error(str(e))
 
         tk.redirect_to(self.ckan_url)
 
@@ -95,31 +102,21 @@ class OpenIDConnect(object):
     def _save_state(self, state):
         """
         Save a state string, used for verifying an OAuth2 login callback, to Redis,
-        along with the time that the login was initiated.
+        with an expiry time of 5 minutes.
         """
         if self.is_redis_available:
             redis = connect_to_redis()
-            login_time = datetime.now().strftime('%Y%m%d%H%M%S')
-            expires_in = self.login_wait_time_seconds * 10  # redis key expiry time
-            redis.setex(state, login_time, expires_in)
+            redis.setex(state, '', 300)
 
     def _verify_state(self, state):
         """
-        Check that the state string provided with a callback matches that sent to the auth
-        server, and that the login was not initiated too long ago.
+        Check that the state string provided with a callback matches one that was sent
+        to the auth server.
         """
         if self.is_redis_available:
             redis = connect_to_redis()
-            if state in redis:
-                try:
-                    login_time = datetime.strptime(redis[state], '%Y%m%d%H%M%S')
-                    elapsed_time = datetime.now() - login_time
-                    if elapsed_time > timedelta(seconds=self.login_wait_time_seconds):
-                        raise OpenIDConnectError(_("Login wait time exceeded"))
-                finally:
-                    del redis[state]
-            else:
-                raise OpenIDConnectError(_("Invalid OAuth2 session state"))
+            if state not in redis:
+                raise OpenIDConnectError(_("Invalid authorization state"))
 
     def _request_userinfo(self, token):
         """
@@ -193,7 +190,7 @@ class OpenIDConnect(object):
         """
         environ = tk.request.environ
         plugins = environ.get('repoze.who.plugins', {})
-        rememberer = plugins.get('auth_tkt')
+        rememberer = plugins['auth_tkt']
         identity = {'repoze.who.userid': user_id}
         headers = rememberer.remember(environ, identity)
         for header, value in headers:

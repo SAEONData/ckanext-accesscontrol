@@ -53,6 +53,5 @@ Where a default is not defined, a value **must** be set in the configuration fil
 | ckan.openidconnect.reset_url              | | Auth service URL for resetting a password.
 | ckan.openidconnect.edit_url               | | Auth service URL for editing a user profile.
 | ckan.openidconnect.insecure_transport     | False | Set to True for development / testing to permit insecure communication with an auth server. Never set this option in production!
-| ckan.openidconnect.login_wait_time_seconds | 60 | Maximum time in seconds to wait for a callback from the auth server after login is initiated.
 
 Restart your CKAN instance after any configuration changes.
