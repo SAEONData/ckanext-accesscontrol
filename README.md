@@ -52,6 +52,11 @@ Where a default is not defined, a value **must** be set in the configuration fil
 | ckan.openidconnect.register_url           | | Auth service URL for new user registration.
 | ckan.openidconnect.reset_url              | | Auth service URL for resetting a password.
 | ckan.openidconnect.edit_url               | | Auth service URL for editing a user profile.
+| ckan.openidconnect.userid_field           | sub   | The user id field in the ID token.
+| ckan.openidconnect.username_field         | name  | The user name field in the ID token.
+| ckan.openidconnect.email_field            | email | The email address field in the ID token.
+| ckan.openidconnect.rolename_field         | role  | The role name field in the ID token.
+| ckan.openidconnect.sysadmin_role          | sysadmin | The sysadmin role name.
 | ckan.openidconnect.insecure_transport     | False | Set to True for development / testing to permit insecure communication with an auth server. Never set this option in production!
 
 Restart your CKAN instance after any configuration changes.

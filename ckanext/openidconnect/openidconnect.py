@@ -17,8 +17,8 @@ class OpenIDConnect(object):
 
     def __init__(self):
 
-        def get_option(key):
-            value = config.get(key)
+        def get_option(key, default=None):
+            value = config.get(key, default)
             if value:
                 return unicode(value)
             self._missing += [key]
@@ -45,6 +45,11 @@ class OpenIDConnect(object):
         self.register_url = get_option('ckan.openidconnect.register_url')
         self.reset_url = get_option('ckan.openidconnect.reset_url')
         self.edit_url = get_option('ckan.openidconnect.edit_url')
+        self.userid_field = get_option('ckan.openidconnect.userid_field', 'sub')
+        self.username_field = get_option('ckan.openidconnect.username_field', 'name')
+        self.email_field = get_option('ckan.openidconnect.email_field', 'email')
+        self.rolename_field = get_option('ckan.openidconnect.rolename_field', 'role')
+        self.sysadmin_role = get_option('ckan.openidconnect.sysadmin_role', 'sysadmin')
         if self._missing:
             raise OpenIDConnectError("Missing configuration options(s): %s", ', '.join(self._missing))
 
@@ -128,12 +133,11 @@ class OpenIDConnect(object):
         response = oauth2session.get(self.userinfo_endpoint)
         response.raise_for_status()
         claims = response.json()
-        user_id = claims.get('UserId')
-        user_data = {key: claims.get(key) for key in ('name', 'email', 'role')}
+        user_id = claims.get(self.userid_field)
+        user_data = {key: claims.get(key) for key in (self.username_field, self.email_field, self.rolename_field)}
         return user_id, user_data
 
-    @staticmethod
-    def _persist_user(user_id, user_data):
+    def _persist_user(self, user_id, user_data):
         """
         Create or update a user in the CKAN database, to correspond with the OpenID user info
         obtained from the authorization server. If user_data is not provided, simply return
@@ -158,9 +162,9 @@ class OpenIDConnect(object):
         }
         data_dict = {
             'id': user_id,
-            'name': user_data.get('name'),
-            'email': user_data.get('email'),
-            'sysadmin': user_data.get('role', '').lower() == 'sysadmin',
+            'name': user_data.get(self.username_field),
+            'email': user_data.get(self.email_field),
+            'sysadmin': user_data.get(self.rolename_field, '').lower() == self.sysadmin_role.lower(),
         }
         try:
             user_dict = tk.get_action('user_show')(context, {'id': user_id})
