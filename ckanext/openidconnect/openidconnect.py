@@ -2,6 +2,7 @@
 
 import logging
 import os
+import json
 from requests_oauthlib import OAuth2Session
 from six.moves.urllib.parse import urljoin
 
@@ -33,12 +34,14 @@ class OpenIDConnect(object):
             log.warning("Redis is not available; OAuth2 session states will not be verifiable")
 
         self.ckan_url = urljoin(config.get('ckan.site_url'), config.get('ckan.root_path'))
-        self.redirect_url = urljoin(self.ckan_url, 'openidconnect/callback')
+        self.redirect_url = urljoin(self.ckan_url, 'oidc/callback')
+        self.postlogout_redirect_url = urljoin(self.ckan_url, 'oidc/logged_out')
 
         self._missing = []
         self.userinfo_endpoint = get_option('ckan.openidconnect.userinfo_endpoint')
         self.authorization_endpoint = get_option('ckan.openidconnect.authorization_endpoint')
         self.token_endpoint = get_option('ckan.openidconnect.token_endpoint')
+        self.endsession_endpoint = get_option('ckan.openidconnect.endsession_endpoint')
         self.client_id = get_option('ckan.openidconnect.client_id')
         self.client_secret = get_option('ckan.openidconnect.client_secret')
         self.scopes = get_option('ckan.openidconnect.scopes')
@@ -58,7 +61,6 @@ class OpenIDConnect(object):
         oauth2session = OAuth2Session(client_id=self.client_id, scope=self.scopes, redirect_uri=self.redirect_url)
         authorization_url, state = oauth2session.authorization_url(self.authorization_endpoint)
         self._save_state(state)
-
         tk.redirect_to(authorization_url)
 
     def callback(self):
@@ -76,6 +78,7 @@ class OpenIDConnect(object):
             oauth2session = OAuth2Session(client_id=self.client_id, redirect_uri=self.redirect_url)
             token = oauth2session.fetch_token(self.token_endpoint, client_secret=self.client_secret, code=auth_code)
             user_id, user_data = self._request_userinfo(token)
+            self._save_token(user_id, token)
             self._persist_user(user_id, user_data)
             self._remember_login(user_id)
         except Exception, e:
@@ -104,6 +107,22 @@ class OpenIDConnect(object):
             user_dict = self._persist_user(user_id, user_data)
             tk.c.user = user_dict['name']
 
+    def logout(self):
+        log.debug("Logout initiated")
+        self._forget_login()
+        user_id = tk.c.userobj.id
+        token = self._load_token(user_id)
+        id_token = token.get('id_token') if token else ''
+        logout_url = self.endsession_endpoint + \
+                     '?post_logout_redirect_uri=' + self.postlogout_redirect_url + \
+                     '&id_token_hint=' + id_token
+        tk.redirect_to(logout_url)
+
+    def logged_out(self):
+        log.debug("Post-logout callback from auth server")
+        self._forget_login()
+        tk.redirect_to(self.ckan_url)
+
     def _save_state(self, state):
         """
         Save a state string, used for verifying an OAuth2 login callback, to Redis,
@@ -111,7 +130,8 @@ class OpenIDConnect(object):
         """
         if self.is_redis_available:
             redis = connect_to_redis()
-            redis.setex(state, '', 300)
+            key = 'oidc_state:' + state
+            redis.setex(key, '', 300)
 
     def _verify_state(self, state):
         """
@@ -120,8 +140,30 @@ class OpenIDConnect(object):
         """
         if self.is_redis_available:
             redis = connect_to_redis()
-            if state not in redis:
+            key = 'oidc_state:' + state
+            if key not in redis:
                 raise OpenIDConnectError(_("Invalid authorization state"))
+
+    def _save_token(self, user_id, token):
+        """
+        Save a user's auth token to Redis, with the expiry time specified within the token.
+        """
+        if self.is_redis_available:
+            expiry_time = token.get('expires_in', 300)
+            redis = connect_to_redis()
+            key = 'oidc_token:' + user_id
+            redis.setex(key, json.dumps(token), expiry_time)
+
+    def _load_token(self, user_id):
+        """
+        Retrieve a user's auth token from Redis.
+        """
+        if self.is_redis_available:
+            redis = connect_to_redis()
+            key = 'oidc_token:' + user_id
+            token = redis.get(key) or '{}'
+            token = json.loads(token)
+            return token
 
     def _request_userinfo(self, token):
         """
@@ -197,5 +239,17 @@ class OpenIDConnect(object):
         rememberer = plugins['auth_tkt']
         identity = {'repoze.who.userid': user_id}
         headers = rememberer.remember(environ, identity)
+        for header, value in headers:
+            tk.response.headers.add(header, value)
+
+    @staticmethod
+    def _forget_login():
+        """
+        Tell repoze.who that we've logged out; this deletes the user id cookie.
+        """
+        environ = tk.request.environ
+        plugins = environ.get('repoze.who.plugins', {})
+        rememberer = plugins['auth_tkt']
+        headers = rememberer.forget(environ, None)
         for header, value in headers:
             tk.response.headers.add(header, value)

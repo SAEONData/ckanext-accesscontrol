@@ -46,6 +46,7 @@ Where a default is not defined, a value **must** be set in the configuration fil
 | ckan.openidconnect.userinfo_endpoint      | | Auth service user info endpoint (URL).
 | ckan.openidconnect.authorization_endpoint | | Auth service authorization endpoint (URL).
 | ckan.openidconnect.token_endpoint         | | Auth service token endpoint (URL).
+| ckan.openidconnect.endsession_endpoint    | | Auth service logout endpoint (URL).
 | ckan.openidconnect.client_id              | | The ID of the client resource that represents the CKAN instance in the auth service.
 | ckan.openidconnect.client_secret          | | The client secret specified for the above client resource.
 | ckan.openidconnect.scopes                 | | Space-separated list of scopes to which the CKAN instance requires access; must include at least `openid`.

@@ -14,3 +14,9 @@ class OpenIDConnectController(base.BaseController):
 
     def callback(self):
         self.openidconnect.callback()
+
+    def logout(self):
+        self.openidconnect.logout()
+
+    def logged_out(self):
+        self.openidconnect.logged_out()
