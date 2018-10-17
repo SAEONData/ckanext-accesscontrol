@@ -10,7 +10,7 @@ OpenID Connect provider.
 
 This extension has been developed and tested with CKAN version 2.7.4.
 
-Redis is required for the verification of OAuth2 login callbacks.
+Redis is required for maintaining login state information.
 
 ## Installation
 

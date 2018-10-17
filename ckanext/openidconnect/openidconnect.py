@@ -24,14 +24,13 @@ class OpenIDConnect(object):
                 return unicode(value)
             self._missing += [key]
 
+        if not is_redis_available():
+            raise OpenIDConnectError("This extension requires Redis")
+
         if tk.asbool(config.get('ckan.openidconnect.insecure_transport')):
             if not tk.asbool(os.environ.get('OAUTHLIB_INSECURE_TRANSPORT')):
                 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
                 log.warning("Allowing OAuth2 over insecure HTTP")
-
-        self.is_redis_available = is_redis_available()
-        if not self.is_redis_available:
-            log.warning("Redis is not available; OAuth2 session states will not be verifiable")
 
         self.ckan_url = urljoin(config.get('ckan.site_url'), config.get('ckan.root_path'))
         self.redirect_url = urljoin(self.ckan_url, 'oidc/callback')
@@ -123,47 +122,47 @@ class OpenIDConnect(object):
         self._forget_login()
         tk.redirect_to(self.ckan_url)
 
-    def _save_state(self, state):
+    @staticmethod
+    def _save_state(state):
         """
         Save a state string, used for verifying an OAuth2 login callback, to Redis,
         with an expiry time of 5 minutes.
         """
-        if self.is_redis_available:
-            redis = connect_to_redis()
-            key = 'oidc_state:' + state
-            redis.setex(key, '', 300)
+        redis = connect_to_redis()
+        key = 'oidc_state:' + state
+        redis.setex(key, '', 300)
 
-    def _verify_state(self, state):
+    @staticmethod
+    def _verify_state(state):
         """
         Check that the state string provided with a callback matches one that was sent
         to the auth server.
         """
-        if self.is_redis_available:
-            redis = connect_to_redis()
-            key = 'oidc_state:' + state
-            if key not in redis:
-                raise OpenIDConnectError(_("Invalid authorization state"))
+        redis = connect_to_redis()
+        key = 'oidc_state:' + state
+        if key not in redis:
+            raise OpenIDConnectError(_("Invalid authorization state"))
 
-    def _save_token(self, user_id, token):
+    @staticmethod
+    def _save_token(user_id, token):
         """
         Save a user's auth token to Redis, with the expiry time specified within the token.
         """
-        if self.is_redis_available:
-            expiry_time = token.get('expires_in', 300)
-            redis = connect_to_redis()
-            key = 'oidc_token:' + user_id
-            redis.setex(key, json.dumps(token), expiry_time)
+        expiry_time = token.get('expires_in', 300)
+        redis = connect_to_redis()
+        key = 'oidc_token:' + user_id
+        redis.setex(key, json.dumps(token), expiry_time)
 
-    def _load_token(self, user_id):
+    @staticmethod
+    def _load_token(user_id):
         """
         Retrieve a user's auth token from Redis.
         """
-        if self.is_redis_available:
-            redis = connect_to_redis()
-            key = 'oidc_token:' + user_id
-            token = redis.get(key) or '{}'
-            token = json.loads(token)
-            return token
+        redis = connect_to_redis()
+        key = 'oidc_token:' + user_id
+        token = redis.get(key) or '{}'
+        token = json.loads(token)
+        return token
 
     def _request_userinfo(self, token):
         """
