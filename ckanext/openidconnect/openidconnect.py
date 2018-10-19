@@ -37,13 +37,15 @@ class OpenIDConnect(object):
         self.postlogout_redirect_url = urljoin(self.ckan_url, 'oidc/logged_out')
 
         self._missing = []
-        self.userinfo_endpoint = get_option('ckan.openidconnect.userinfo_endpoint')
         self.authorization_endpoint = get_option('ckan.openidconnect.authorization_endpoint')
         self.token_endpoint = get_option('ckan.openidconnect.token_endpoint')
         self.endsession_endpoint = get_option('ckan.openidconnect.endsession_endpoint')
+        self.introspection_endpoint = get_option('ckan.openidconnect.introspection_endpoint')
+        self.userinfo_endpoint = get_option('ckan.openidconnect.userinfo_endpoint')
         self.client_id = get_option('ckan.openidconnect.client_id')
         self.client_secret = get_option('ckan.openidconnect.client_secret')
-        self.scopes = get_option('ckan.openidconnect.scopes')
+        self.api_scope = get_option('ckan.openidconnect.api_scope')
+        self.authorized_clients = get_option('ckan.openidconnect.authorized_clients')
         self.register_url = get_option('ckan.openidconnect.register_url')
         self.reset_url = get_option('ckan.openidconnect.reset_url')
         self.edit_url = get_option('ckan.openidconnect.edit_url')
@@ -54,6 +56,9 @@ class OpenIDConnect(object):
         self.sysadmin_role = get_option('ckan.openidconnect.sysadmin_role', 'sysadmin')
         if self._missing:
             raise OpenIDConnectError("Missing configuration options(s): %s", ', '.join(self._missing))
+
+        self.scopes = ['openid', self.api_scope]
+        self.authorized_clients = self.authorized_clients.split()
 
     def login(self):
         log.debug("Login initiated")
@@ -76,10 +81,12 @@ class OpenIDConnect(object):
 
             oauth2session = OAuth2Session(client_id=self.client_id, redirect_uri=self.redirect_url)
             token = oauth2session.fetch_token(self.token_endpoint, client_secret=self.client_secret, code=auth_code)
+            self._validate_token(token)
             user_id, user_data = self._request_userinfo(token)
             self._save_token(user_id, token)
             self._persist_user(user_id, user_data)
             self._remember_login(user_id)
+
         except Exception, e:
             log.error(str(e))
             tk.h.flash_error(str(e))
@@ -90,13 +97,19 @@ class OpenIDConnect(object):
         if tk.c.user:
             return
 
+        log.debug("Identifying user")
         user_id = None
         user_data = None
 
         auth_header = tk.request.headers.get('Authorization')
         if auth_header and auth_header.startswith('Bearer '):
             token = {'access_token': auth_header[7:]}
-            user_id, user_data = self._request_userinfo(token)
+            try:
+                self._validate_token(token)
+                user_id, user_data = self._request_userinfo(token)
+            except Exception, e:
+                log.error(str(e))
+                return
 
         if not user_id:
             environ = tk.request.environ
@@ -164,10 +177,29 @@ class OpenIDConnect(object):
         token = json.loads(token)
         return token
 
+    def _validate_token(self, token):
+        """
+        Get detailed info about the token from the auth server, and check that it is
+        valid for our CKAN instance.
+        :param token: token dictionary
+        """
+        return  # getting an HTTP 415 from the introspection endpoint
+        oauth2session = OAuth2Session(token=token)
+        response = oauth2session.post(self.introspection_endpoint)
+        response.raise_for_status()
+        result = response.json()
+        scopes = result.get('scope', '').split()
+        client_id = result.get('client_id')
+        valid = result.get('active') and \
+                self.api_scope in scopes and \
+                client_id in self.authorized_clients
+        if not valid:
+            raise OpenIDConnectError(_("Invalid access token"))
+
     def _request_userinfo(self, token):
         """
         Get user info from the auth server.
-        :param token: token dict obtained from the auth server token endpoint
+        :param token: token dictionary
         :returns: tuple(user_id, user_data) where user_data is a dict of additional user values
         """
         oauth2session = OAuth2Session(token=token)
