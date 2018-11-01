@@ -51,6 +51,8 @@ Where a default is not defined, a value **must** be set in the configuration fil
 | ckan.openidconnect.client_id              | | The ID of the client resource that represents the CKAN UI in the auth service.
 | ckan.openidconnect.client_secret          | | The client secret specified for the above client resource.
 | ckan.openidconnect.api_scope              | | The scope associated with the API resource that represents the CKAN instance in the auth service.
+| ckan.openidconnect.api_id                 | | The ID of the above API resource.
+| ckan.openidconnect.api_secret             | | The secret specified for the above API resource.
 | ckan.openidconnect.authorized_clients     | | Space-separated list of client IDs that are allowed to access the CKAN instance. This should include the client_id specified above.
 | ckan.openidconnect.register_url           | | Auth service URL for new user registration.
 | ckan.openidconnect.reset_url              | | Auth service URL for resetting a password.

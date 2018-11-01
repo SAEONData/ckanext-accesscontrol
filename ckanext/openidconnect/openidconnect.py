@@ -3,6 +3,7 @@
 import logging
 import os
 import json
+import requests
 from requests_oauthlib import OAuth2Session
 from six.moves.urllib.parse import urljoin
 
@@ -45,6 +46,8 @@ class OpenIDConnect(object):
         self.client_id = get_option('ckan.openidconnect.client_id')
         self.client_secret = get_option('ckan.openidconnect.client_secret')
         self.api_scope = get_option('ckan.openidconnect.api_scope')
+        self.api_id = get_option('ckan.openidconnect.api_id')
+        self.api_secret = get_option('ckan.openidconnect.api_secret')
         self.authorized_clients = get_option('ckan.openidconnect.authorized_clients')
         self.register_url = get_option('ckan.openidconnect.register_url')
         self.reset_url = get_option('ckan.openidconnect.reset_url')
@@ -179,13 +182,12 @@ class OpenIDConnect(object):
 
     def _validate_token(self, token):
         """
-        Get detailed info about the token from the auth server, and check that it is
+        Get detailed info about the access token from the auth server, and check that it is
         valid for our CKAN instance.
         :param token: token dictionary
         """
-        return  # getting an HTTP 415 from the introspection endpoint
-        oauth2session = OAuth2Session(token=token)
-        response = oauth2session.post(self.introspection_endpoint)
+        access_token = token.get('access_token') if token else ''
+        response = requests.post(self.introspection_endpoint, data={'token': access_token}, auth=(self.api_id, self.api_secret))
         response.raise_for_status()
         result = response.json()
         scopes = result.get('scope', '').split()
