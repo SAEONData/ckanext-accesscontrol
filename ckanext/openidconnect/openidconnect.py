@@ -6,6 +6,8 @@ import json
 import requests
 from requests_oauthlib import OAuth2Session
 from six.moves.urllib.parse import urljoin
+from oauthlib.oauth2 import OAuth2Error
+from requests import RequestException
 
 import ckan.plugins.toolkit as tk
 from ckan.common import _, config
@@ -13,6 +15,7 @@ from ckan.lib.redis import is_redis_available, connect_to_redis
 from ckanext.openidconnect import OpenIDConnectError
 
 log = logging.getLogger(__name__)
+anyAuthException = (OpenIDConnectError, OAuth2Error, RequestException)
 
 
 class OpenIDConnect(object):
@@ -90,7 +93,7 @@ class OpenIDConnect(object):
             self._persist_user(user_id, user_data)
             self._remember_login(user_id)
 
-        except Exception, e:
+        except anyAuthException, e:
             log.error(str(e))
             tk.h.flash_error(str(e))
 
@@ -104,16 +107,18 @@ class OpenIDConnect(object):
         user_id = None
         user_data = None
 
+        # API calls should arrive with an access token in the auth header
         auth_header = tk.request.headers.get('Authorization')
         if auth_header and auth_header.startswith('Bearer '):
             token = {'access_token': auth_header[7:]}
             try:
                 self._validate_token(token)
                 user_id, user_data = self._request_userinfo(token)
-            except Exception, e:
+            except anyAuthException, e:
                 log.error(str(e))
                 return
 
+        # if not an API call, we're dealing with a user logged in via the CKAN UI
         if not user_id:
             environ = tk.request.environ
             user_id = environ.get('repoze.who.identity', {}).get('repoze.who.userid')
