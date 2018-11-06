@@ -15,16 +15,18 @@ class OpenIDConnectPlugin(p.SingletonPlugin):
     def __init__(self, **kwargs):
         self.openidconnect = OpenIDConnect()
 
-    def before_map(self, m):
-        controller = 'ckanext.openidconnect.controller:OpenIDConnectController'
-        m.connect('/user/login', action='login', controller=controller)
-        m.connect('/user/_logout', action='logout', controller=controller)
-        m.connect('/oidc/callback', action='callback', controller=controller)
-        m.connect('/oidc/logged_out', action='logged_out', controller=controller)
-        m.redirect('/user/register', self.openidconnect.register_url)
-        m.redirect('/user/reset', self.openidconnect.reset_url)
-        m.redirect('/user/edit', self.openidconnect.edit_url)
-        return m
+    def before_map(self, map):
+        with map.submapper(controller='ckanext.openidconnect.controller:OpenIDConnectController') as m:
+            m.connect('/user/login', action='login')
+            m.connect('/user/_logout', action='logout')
+            m.connect('/oidc/callback', action='callback')
+            m.connect('/oidc/logged_out', action='logged_out')
+
+        map.redirect('/user/register', self.openidconnect.register_url)
+        map.redirect('/user/reset', self.openidconnect.reset_url)
+        map.redirect('/user/edit', self.openidconnect.edit_url)
+
+        return map
 
     def identify(self):
         self.openidconnect.identify()
