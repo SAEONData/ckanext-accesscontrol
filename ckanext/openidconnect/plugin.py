@@ -24,7 +24,7 @@ class OpenIDConnectPlugin(p.SingletonPlugin):
 
         map.redirect('/user/register', self.openidconnect.register_url)
         map.redirect('/user/reset', self.openidconnect.reset_url)
-        map.redirect('/user/edit', self.openidconnect.edit_url)
+        map.redirect('/user/edit/{user}', self.openidconnect.edit_url)
 
         return map
 
