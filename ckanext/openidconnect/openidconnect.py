@@ -257,13 +257,13 @@ class OpenIDConnect(object):
                         break
                 if update:
                     user_dict = tk.get_action('user_update')(context, data_dict)
-                    log.info("Updated user record for OpenID user %s", user_id)
+                    log.info("Updated user record for OpenID user %s (%s)", user_id, user_dict['name'])
 
         except tk.ObjectNotFound:
             if not user_data:
                 raise
             user_dict = tk.get_action('user_create')(context, data_dict)
-            log.info("Created user record for OpenID user %s", user_id)
+            log.info("Created user record for OpenID user %s (%s)", user_id, user_dict['name'])
 
         return user_dict
 
