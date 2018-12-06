@@ -214,7 +214,7 @@ class OpenIDConnect(object):
         response.raise_for_status()
         claims = response.json()
         user_id = claims.get(self.userid_field)
-        user_data = {key: claims.get(key) for key in (self.username_field, self.email_field, self.rolename_field)}
+        user_data = {key: claims.get(key, '') for key in (self.username_field, self.email_field, self.rolename_field)}
         return user_id, user_data
 
     def _persist_user(self, user_id, user_data):
