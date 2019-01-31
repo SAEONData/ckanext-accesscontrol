@@ -8,7 +8,7 @@ OpenID Connect provider.
 
 ## Requirements
 
-This extension has been developed and tested with CKAN version 2.7.4.
+This extension has been developed and tested with CKAN version 2.8.2.
 
 Redis is required for maintaining login state information.
 
