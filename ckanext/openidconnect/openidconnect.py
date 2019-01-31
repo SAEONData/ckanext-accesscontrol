@@ -100,7 +100,7 @@ class OpenIDConnect(object):
         tk.redirect_to(self.ckan_url)
 
     def identify(self):
-        if tk.c.user:
+        if getattr(tk.c, 'user', None):
             return
 
         log.debug("Identifying user")
