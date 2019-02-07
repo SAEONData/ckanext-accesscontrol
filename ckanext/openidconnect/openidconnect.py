@@ -214,7 +214,11 @@ class OpenIDConnect(object):
         response.raise_for_status()
         claims = response.json()
         user_id = claims.get(self.userid_field)
-        user_data = {key: claims.get(key, '') for key in (self.username_field, self.email_field, self.rolename_field)}
+        user_data = {key: claims.get(key, '') for key in (self.username_field, self.email_field)}
+        roles = claims.get(self.rolename_field) or []
+        if isinstance(roles, basestring):
+            roles = [roles]
+        user_data[self.rolename_field] = roles
         return user_id, user_data
 
     def _persist_user(self, user_id, user_data):
@@ -230,6 +234,9 @@ class OpenIDConnect(object):
         :rtype: dictionary
         """
         user_data = user_data or {}
+        roles = user_data.get(self.rolename_field, [])
+        is_sysadmin = any((True for role in roles if role.lower() == self.sysadmin_role.lower()))
+
         context = {
             'ignore_auth': True,
             'keep_email': True,
@@ -244,7 +251,7 @@ class OpenIDConnect(object):
             'id': user_id,
             'name': user_data.get(self.username_field),
             'email': user_data.get(self.email_field),
-            'sysadmin': user_data.get(self.rolename_field, '').lower() == self.sysadmin_role.lower(),
+            'sysadmin': is_sysadmin,
         }
         try:
             user_dict = tk.get_action('user_show')(context, {'id': user_id})
