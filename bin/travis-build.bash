@@ -38,7 +38,7 @@ cd ckan
 paster db init -c test-core.ini
 cd -
 
-echo "Installing ckanext-openidconnect and its requirements..."
+echo "Installing ckanext-accesscontrol and its requirements..."
 python setup.py develop
 pip install -r requirements.txt
 pip install -r dev-requirements.txt

@@ -5,8 +5,8 @@ nosetests --ckan \
           --nologcapture \
           --with-pylons=subdir/test.ini \
           --with-coverage \
-          --cover-package=ckanext.openidconnect \
+          --cover-package=ckanext.accesscontrol \
           --cover-inclusive \
           --cover-erase \
           --cover-tests \
-          ckanext/openidconnect/tests
+          ckanext/accesscontrol/tests

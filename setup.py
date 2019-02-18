@@ -5,10 +5,10 @@ from setuptools import setup, find_packages
 version = '0.3.1'
 
 setup(
-    name='ckanext-openidconnect',
+    name='ckanext-accesscontrol',
     version=version,
-    description='An extension enabling authentication and authorization via OpenID Connect',
-    url='https://github.com/SAEONData/ckanext-openidconnect',
+    description='An extension for CKAN providing OpenID Connect authentication and role-based access control',
+    url='https://github.com/SAEONData/ckanext-accesscontrol',
     author='Mark Jacobson',
     author_email='mark@saeon.ac.za',
     license='MIT',
@@ -17,7 +17,7 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 2.7',
     ],
-    keywords='CKAN OAuth2 OpenIDConnect',
+    keywords='CKAN OAuth2 OpenID Connect Authentication Authorization Roles Permissions Privileges',
     packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
     namespace_packages=['ckanext'],
     install_requires=[
@@ -27,7 +27,7 @@ setup(
     package_data={},
     entry_points='''
         [ckan.plugins]
-        openidconnect = ckanext.openidconnect.plugin:OpenIDConnectPlugin
+        accesscontrol = ckanext.accesscontrol.plugin:AccessControlPlugin
 
         [babel.extractors]
         ckan = ckan.lib.extract:extract_ckan

@@ -1,4 +1,4 @@
 include README.md
 include LICENSE.md
 include requirements.txt
-recursive-include ckanext/openidconnect *.html *.json *.js *.less *.css *.mo
+recursive-include ckanext/accesscontrol *.html *.json *.js *.less *.css *.mo
