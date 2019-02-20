@@ -18,6 +18,7 @@ class AccessControlPlugin(p.SingletonPlugin):
     p.implements(p.IActions)
     p.implements(p.IAuthFunctions)
 
+    # pointer to the check_access function in core CKAN
     core_check_access = None
 
     def before_map(self, map):
@@ -34,9 +35,16 @@ class AccessControlPlugin(p.SingletonPlugin):
         return map
 
     def identify(self):
+        """
+        Identify the user who is making the call to CKAN.
+        """
         logic.identify()
 
     def check_access(self, action_name, context, data_dict=None):
+        """
+        Check whether the user has the privilege to perform the named action,
+        before calling the core check_access function.
+        """
         check_context = context.copy()
         check_context['ignore_auth'] = True
         check_data_dict = {
@@ -49,11 +57,17 @@ class AccessControlPlugin(p.SingletonPlugin):
         return self.core_check_access(action_name, context, data_dict)
 
     def after_load(self, service):
+        """
+        Chain our check_access method onto CKAN's when the plugin is loaded.
+        """
         if self.core_check_access is None:
             self.core_check_access = ckan.logic.check_access
             ckan.logic.check_access = self.check_access
 
     def after_unload(self, service):
+        """
+        Un-chain our check_access method from CKAN's when the plugin is unloaded.
+        """
         if self.core_check_access is not None:
             ckan.logic.check_access = self.core_check_access
             self.core_check_access = None
