@@ -29,8 +29,12 @@ In a production environment, you'll probably want to pin a specific
 
     pip install -e 'git+https://github.com/SAEONData/ckanext-accesscontrol.git@v1.0.0#egg=ckanext-accesscontrol'
 
-Open your CKAN configuration file (e.g. `/etc/ckan/default/production.ini`) and
-add `accesscontrol` to the list of plugins:
+Create the required database tables:
+
+    cd /usr/lib/ckan/default/src/ckanext-accesscontrol
+    paster accesscontrol initdb -c /etc/ckan/default/development.ini
+
+Add `accesscontrol` to the list of plugins in your CKAN configuration file (e.g. `/etc/ckan/default/production.ini`):
 
     ckan.plugins = ... accesscontrol
 

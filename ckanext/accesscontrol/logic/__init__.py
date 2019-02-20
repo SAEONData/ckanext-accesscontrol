@@ -194,7 +194,7 @@ def _persist_user(user_id, user_data):
     """
     user_data = user_data or {}
     roles = user_data.get(config.rolename_field, [])
-    is_sysadmin = any((True for role in roles if role.lower() == config.sysadmin_role.lower()))
+    is_sysadmin = any((True for role in roles if config.is_sysadmin_role(role)))
 
     context = {
         'ignore_auth': True,

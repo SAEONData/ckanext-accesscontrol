@@ -17,7 +17,7 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 2.7',
     ],
-    keywords='CKAN OAuth2 OpenID Connect Authentication Authorization Roles Permissions Privileges',
+    keywords='CKAN OAuth2 OpenIDConnect Authentication Authorization Roles Permissions Privileges',
     packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
     namespace_packages=['ckanext'],
     install_requires=[
@@ -28,6 +28,9 @@ setup(
     entry_points='''
         [ckan.plugins]
         accesscontrol = ckanext.accesscontrol.plugin:AccessControlPlugin
+
+        [paste.paster_command]
+        accesscontrol = ckanext.accesscontrol.command:AccessControlCommand
 
         [babel.extractors]
         ckan = ckan.lib.extract:extract_ckan

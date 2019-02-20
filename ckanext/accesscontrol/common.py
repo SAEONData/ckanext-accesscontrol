@@ -11,7 +11,7 @@ from ckanext.accesscontrol import AccessControlError
 
 log = logging.getLogger(__name__)
 
-_defaults = {
+_config_defaults = {
     'ckan.accesscontrol.userid_field': 'sub',
     'ckan.accesscontrol.username_field': 'name',
     'ckan.accesscontrol.email_field': 'email',
@@ -19,13 +19,22 @@ _defaults = {
     'ckan.accesscontrol.sysadmin_role': 'sysadmin',
 }
 
+_actions_with_automatic_permission = (
+    'site_read',
+    'user_create',
+)
+
+
+def is_action_permission_automatic(action_name):
+    return action_name in _actions_with_automatic_permission
+
 
 class AccessControlConfig(object):
 
     def __init__(self):
 
         def get_option(key):
-            default = _defaults.get(key)
+            default = _config_defaults.get(key)
             value = ckan_config.get(key, default)
             if value:
                 return unicode(value)
@@ -68,6 +77,12 @@ class AccessControlConfig(object):
 
         self.scopes = ['openid', self.api_scope]
         self.authorized_clients = self.authorized_clients.split()
+
+    def is_sysadmin_role(self, role):
+        """
+        Test whether the given role name represents the sysadmin role.
+        """
+        return role.lower() == self.sysadmin_role.lower()
 
 
 config = AccessControlConfig()
