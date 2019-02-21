@@ -27,10 +27,11 @@ setup(
     package_data={},
     entry_points='''
         [ckan.plugins]
-        accesscontrol = ckanext.accesscontrol.plugin:AccessControlPlugin
+        openidconnect = ckanext.accesscontrol.openidconnect_plugin:OpenIDConnectPlugin
+        roles = ckanext.accesscontrol.roles_plugin:RolesPlugin
 
         [paste.paster_command]
-        accesscontrol = ckanext.accesscontrol.command:AccessControlCommand
+        roles = ckanext.accesscontrol.roles_command:RolesCommand
 
         [babel.extractors]
         ckan = ckan.lib.extract:extract_ckan

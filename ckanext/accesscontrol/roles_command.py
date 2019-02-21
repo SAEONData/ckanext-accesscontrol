@@ -6,13 +6,13 @@ import sys
 import ckan.plugins.toolkit as tk
 
 
-class AccessControlCommand(tk.CkanCommand):
+class RolesCommand(tk.CkanCommand):
     """
-    Plugin management commands.
+    Roles plugin management commands.
 
     Usage:
-        paster accesscontrol initdb
-            - Initialize the database tables for the accesscontrol plugin
+        paster roles initdb
+            - Initialize the database tables for the roles plugin
     """
     summary = __doc__.split('\n')[0]
     usage = __doc__
@@ -32,6 +32,6 @@ class AccessControlCommand(tk.CkanCommand):
             self._initdb()
 
     def _initdb(self):
-        from ckanext.accesscontrol.model import setup
-        setup.init_tables()
-        self.log.info("Access control tables have been initialized")
+        from ckanext.accesscontrol.model import setup_roles
+        setup_roles.init_tables()
+        self.log.info("Roles tables have been initialized")

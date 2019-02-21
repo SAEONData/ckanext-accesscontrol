@@ -3,7 +3,7 @@
 import ckan.plugins.toolkit as tk
 from ckan.common import _
 from ckanext.accesscontrol.model.role import Role
-from ckanext.accesscontrol.common import config
+from ckanext.accesscontrol.openidconnect_config import config
 
 
 def role_name_validator(key, data, errors, context):

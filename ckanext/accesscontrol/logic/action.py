@@ -10,7 +10,7 @@ from ckanext.accesscontrol.lib.dictization import role_dict_save, role_dictize, 
 from ckanext.accesscontrol.model.role import Role
 from ckanext.accesscontrol.model.user_role import UserRole
 from ckanext.accesscontrol.model.role_permission import RolePermission
-from ckanext.accesscontrol.common import is_action_permission_automatic
+from ckanext.accesscontrol.logic import is_action_permission_automatic
 
 log = logging.getLogger(__name__)
 
