@@ -17,6 +17,7 @@ class AccessControlPlugin(p.SingletonPlugin):
     p.implements(p.IPluginObserver, inherit=True)
     p.implements(p.IActions)
     p.implements(p.IAuthFunctions)
+    p.implements(p.IConfigurer)
 
     # pointer to the check_access function in core CKAN
     core_check_access = None
@@ -31,6 +32,9 @@ class AccessControlPlugin(p.SingletonPlugin):
         map.redirect('/user/register', config.register_url)
         map.redirect('/user/reset', config.reset_url)
         map.redirect('/user/edit/{user}', config.edit_url)
+
+        with map.submapper(controller='ckanext.accesscontrol.controllers.role:RoleController') as m:
+            m.connect('role_index', '/role', action='index')
 
         return map
 
@@ -103,3 +107,7 @@ class AccessControlPlugin(p.SingletonPlugin):
             'user_role_list': auth.user_role_list,
             'role_user_list': auth.role_user_list,
         }
+
+    def update_config(self, config):
+        tk.add_template_directory(config, 'templates')
+        tk.add_public_directory(config, 'public')

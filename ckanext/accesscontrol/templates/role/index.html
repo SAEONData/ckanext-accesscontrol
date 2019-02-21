@@ -1,0 +1,44 @@
+{% extends "page.html" %}
+
+{% block breadcrumb_content %}
+  {% snippet "role/snippets/breadcrumb_content_outer.html" %}
+{% endblock %}
+
+{% block subtitle %}{{ _('Roles') }}{% endblock %}
+
+{% block page_primary_action %}
+  {% link_for _('Create Role'), controller='ckanext.accesscontrol.controllers.role:RoleController',
+    action='new', class_='btn btn-primary', icon='plus-square' %}
+{% endblock %}
+
+{% block primary_content_inner %}
+  <h1 class="hide-heading">{{ _('Role') }}</h1>
+  {% block roles_search_form %}
+    {% snippet 'snippets/search_form.html', form_id='role-search-form', type='role',
+      query=c.q, sorting_selected=c.sort_by_selected, count=c.page.item_count,
+      placeholder=_('Search roles...'), show_empty=request.params, no_bottom_border=true if c.page.items,
+      sorting = [(_('Name Ascending'), 'display_name asc'), (_('Name Descending'), 'display_name desc')] %}
+  {% endblock %}
+  {% block roles_list %}
+    {% if c.page.items or request.params %}
+      {% if c.page.items %}
+        {% snippet "role/snippets/role_list.html", roles=c.page.items %}
+      {% endif %}
+    {% else %}
+      <p class="empty">
+        {{ _('There are currently no roles for this site') }}.
+        {% if h.check_access('role_create') %}
+          {% link_for _('How about creating one?'), action='new',
+            controller='ckanext.metadata.controllers.role:RoleController' %}
+        {% endif %}
+      </p>
+    {% endif %}
+  {% endblock %}
+  {% block page_pagination %}
+    {{ c.page.pager(q=c.q or '', sort=c.sort_by_selected or '') }}
+  {% endblock %}
+{% endblock %}
+
+{% block secondary_content %}
+  {% snippet "role/snippets/info.html" %}
+{% endblock %}
