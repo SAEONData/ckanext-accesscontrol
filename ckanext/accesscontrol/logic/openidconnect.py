@@ -23,6 +23,9 @@ anyAuthException = (OpenIDConnectError, OAuth2Error, RequestException)
 
 
 def identify():
+    """
+    Identify the user who is making the call to CKAN.
+    """
     if getattr(tk.c, 'user', None):
         return  # user already identified
 
@@ -52,6 +55,10 @@ def identify():
 
 
 def login():
+    """
+    Start the OpenID Connect authorization code flow; redirect the user to the
+    auth server to authenticate.
+    """
     log.debug("Login initiated")
     oauth2session = OAuth2Session(client_id=config.client_id, scope=config.scopes, redirect_uri=config.redirect_url)
     authorization_url, state = oauth2session.authorization_url(config.authorization_endpoint)
@@ -60,6 +67,10 @@ def login():
 
 
 def callback():
+    """
+    Callback from the auth server after the user has logged in; the remainder of the
+    authorization code flow and local login processing happens here.
+    """
     log.debug("Callback from auth server")
     try:
         error = tk.request.params.get('error')
@@ -87,6 +98,9 @@ def callback():
 
 
 def logout():
+    """
+    Perform a local logout then redirect to the auth server to logout there.
+    """
     log.debug("Logout initiated")
     _forget_login()
     user_id = tk.c.userobj.id
@@ -99,6 +113,9 @@ def logout():
 
 
 def logged_out():
+    """
+    Callback from the auth server after the user has been logged out.
+    """
     log.debug("Post-logout callback from auth server")
     _forget_login()
     tk.redirect_to(config.ckan_url)
