@@ -20,6 +20,16 @@ def role_create_schema():
     return schema
 
 
+def role_update_schema():
+    schema = {
+        'id': [],
+        'name': [ignore_missing, unicode, name_validator, v.role_name_validator],
+        'title': [ignore_missing, unicode],
+        'description': [ignore_missing, unicode],
+    }
+    return schema
+
+
 def role_show_schema():
     schema = dict.fromkeys(role_create_schema(), [])
     schema['revision_id'] = []

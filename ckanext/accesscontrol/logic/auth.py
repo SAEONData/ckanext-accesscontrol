@@ -11,6 +11,11 @@ def role_create(context, data_dict):
     return {'success': False}
 
 
+def role_update(context, data_dict):
+    # sysadmins only
+    return {'success': False}
+
+
 def role_delete(context, data_dict):
     # sysadmins only
     return {'success': False}

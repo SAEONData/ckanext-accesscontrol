@@ -110,6 +110,73 @@ def role_create(context, data_dict):
     return output
 
 
+def role_update(context, data_dict):
+    """
+    Update a role.
+
+    You must be a sysadmin to update roles.
+
+    It is recommended to call
+    :py:func:`ckan.logic.action.get.role_show`, make the desired changes to
+    the result, and then call ``role_update()`` with it.
+
+    For further parameters see
+    :py:func:`~ckanext.accesscontrol.logic.action.role_create`.
+
+    :param id: the id or name of the role to update
+    :type id: string
+
+    :returns: the updated role (unless 'return_id_only' is set to True
+              in the context, in which case just the role id will be returned)
+    :rtype: dictionary
+    """
+    log.info("Updating role: %r", data_dict)
+
+    model = context['model']
+    user = context['user']
+    session = context['session']
+    defer_commit = context.get('defer_commit', False)
+    return_id_only = context.get('return_id_only', False)
+
+    role_id = tk.get_or_bust(data_dict, 'id')
+    role = extmodel.Role.get(role_id)
+    if role is not None:
+        role_id = role.id
+    else:
+        raise tk.ObjectNotFound('%s: %s' % (_('Not found'), _('Role')))
+
+    tk.check_access('role_update', context, data_dict)
+
+    data_dict.update({
+        'id': role_id,
+    })
+    context.update({
+        'role': role,
+        'allow_partial_update': True,
+    })
+
+    data, errors = tk.navl_validate(data_dict, schema.role_update_schema(), context)
+    if errors:
+        session.rollback()
+        raise tk.ValidationError(errors)
+
+    role = role_dict_save(data, context)
+
+    rev = model.repo.new_revision()
+    rev.author = user
+    if 'message' in context:
+        rev.message = context['message']
+    else:
+        rev.message = _(u'REST API: Update role %s') % role_id
+
+    if not defer_commit:
+        model.repo.commit()
+
+    output = role_id if return_id_only \
+        else tk.get_action('role_show')(context, {'id': role_id})
+    return output
+
+
 def role_delete(context, data_dict):
     """
     Delete a role.

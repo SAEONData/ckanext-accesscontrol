@@ -70,6 +70,7 @@ class RolesPlugin(p.SingletonPlugin):
         return {
             'user_privilege_check': action.user_privilege_check,
             'role_create': action.role_create,
+            'role_update': action.role_update,
             'role_delete': action.role_delete,
             'role_show': action.role_show,
             'role_list': action.role_list,
@@ -86,6 +87,7 @@ class RolesPlugin(p.SingletonPlugin):
         return {
             'user_privilege_check': auth.user_privilege_check,
             'role_create': auth.role_create,
+            'role_update': auth.role_update,
             'role_delete': auth.role_delete,
             'role_show': auth.role_show,
             'role_list': auth.role_list,
