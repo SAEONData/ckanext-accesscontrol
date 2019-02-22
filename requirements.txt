@@ -1,2 +1,2 @@
-oauthlib==2.1.0
-requests_oauthlib==1.0.0
+oauthlib==3.0.1
+requests_oauthlib==1.2.0
