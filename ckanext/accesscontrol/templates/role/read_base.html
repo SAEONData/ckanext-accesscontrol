@@ -9,7 +9,7 @@
 
 {% block content_action %}
   {% if h.check_access('role_update', {'id': c.role.id}) %}
-    {% link_for _('Manage'), controller='ckanext.metadata.controllers.role:RoleController',
+    {% link_for _('Manage'), controller='ckanext.accesscontrol.controllers.role:RoleController',
       action='edit', id=c.role.name, class_='btn', icon='wrench' %}
   {% endif %}
 {% endblock %}

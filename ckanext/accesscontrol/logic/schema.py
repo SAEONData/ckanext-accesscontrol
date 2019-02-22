@@ -33,4 +33,5 @@ def role_update_schema():
 def role_show_schema():
     schema = dict.fromkeys(role_create_schema(), [])
     schema['revision_id'] = []
+    schema['display_name'] = []
     return schema

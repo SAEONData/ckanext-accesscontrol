@@ -29,7 +29,7 @@
         {{ _('There are currently no roles for this site') }}.
         {% if h.check_access('role_create') %}
           {% link_for _('How about creating one?'), action='new',
-            controller='ckanext.metadata.controllers.role:RoleController' %}
+            controller='ckanext.accesscontrol.controllers.role:RoleController' %}
         {% endif %}
       </p>
     {% endif %}
