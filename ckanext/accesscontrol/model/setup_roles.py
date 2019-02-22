@@ -2,9 +2,7 @@
 
 import logging
 
-from ckanext.accesscontrol.model.role import *
-from ckanext.accesscontrol.model.role_permission import *
-from ckanext.accesscontrol.model.user_role import *
+from ckanext.accesscontrol.model import *
 
 log = logging.getLogger(__name__)
 

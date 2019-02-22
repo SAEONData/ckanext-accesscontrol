@@ -2,7 +2,7 @@
 
 import ckan.plugins.toolkit as tk
 from ckan.common import _
-from ckanext.accesscontrol.model.role import Role
+import ckanext.accesscontrol.model as extmodel
 from ckanext.accesscontrol.openidconnect_config import config
 
 
@@ -15,13 +15,13 @@ def role_name_validator(key, data, errors, context):
     session = context['session']
     role = context.get('role')
 
-    query = session.query(Role.name) \
-        .filter(Role.name == role_name) \
-        .filter(Role.state != 'deleted')
+    query = session.query(extmodel.Role.name) \
+        .filter(extmodel.Role.name == role_name) \
+        .filter(extmodel.Role.state != 'deleted')
 
     id_ = role.id if role else data.get(key[:-1] + ('id',))
     if id_ and id_ is not tk.missing:
-        query = query.filter(Role.id != id_)
+        query = query.filter(extmodel.Role.id != id_)
     result = query.first()
     if result:
         raise tk.Invalid('%s: %s' % (_('Duplicate name'), _('Role')))
