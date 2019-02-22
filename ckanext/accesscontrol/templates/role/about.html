@@ -1,0 +1,16 @@
+{% extends "role/read_base.html" %}
+
+{% block subtitle %}{{ _('About') }} - {{ super() }}{% endblock %}
+
+{% block primary_content_inner %}
+  <h1>
+    {% block page_heading %}
+      {{ c.role.display_name }}
+    {% endblock %}
+  </h1>
+  {% block role_description %}
+    {% if h.get_translated(c.role, 'description') %}
+      {{ h.render_markdown(h.get_translated(c.role, 'description')) }}
+    {% endif %}
+  {% endblock %}
+{% endblock %}

@@ -1,0 +1,4 @@
+<li>
+  {% link_for c.role.display_name |truncate(35), action='read', id=c.role.name,
+    controller='ckanext.accesscontrol.controllers.role:RoleController' %}
+</li>

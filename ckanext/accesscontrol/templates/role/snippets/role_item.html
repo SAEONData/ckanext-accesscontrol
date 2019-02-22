@@ -1,0 +1,39 @@
+{#
+Renders a media item for a role. This should be used in a list.
+
+role - A role dict.
+
+Example:
+
+    <ul class="media-grid">
+      {% for role in roles %}
+        {% snippet "role/snippets/role_item.html", role=role %}
+      {% endfor %}
+    </ul>
+#}
+{% set url = h.url_for('role_read', action='read', id=role.name) %}
+{% block item %}
+<li class="media-item">
+  {% block item_inner %}
+    {% block image %}
+      <img src="{{ h.url_for_static('/images/role.png') }}" alt="{{ role.name }}" class="media-image img-responsive">
+    {% endblock %}
+    {% block title %}
+      <h3 class="media-heading">{{ role.display_name }}</h3>
+    {% endblock %}
+    {% block description %}
+      {% if h.get_translated(role, 'description') %}
+        <p>{{ h.markdown_extract(h.get_translated(role, 'description'), extract_length=80) }}</p>
+      {% endif %}
+    {% endblock %}
+    {% block link %}
+    <a href="{{ url }}" title="{{ _('View {name}').format(name=role.display_name) }}" class="media-view">
+      <span>{{ _('View {name}').format(name=role.display_name) }}</span>
+    </a>
+    {% endblock %}
+  {% endblock %}
+</li>
+{% endblock %}
+{% if position is divisibleby 3 %}
+  <li class="clearfix js-hide"></li>
+{% endif %}

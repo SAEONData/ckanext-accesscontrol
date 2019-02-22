@@ -1,0 +1,25 @@
+{% extends "page.html" %}
+
+{% block subtitle %}{{ c.role.display_name }} - {{ _('Roles') }}{% endblock %}
+
+{% block breadcrumb_content %}
+  {% snippet "role/snippets/breadcrumb_content_outer.html" %}
+  {% snippet "role/snippets/breadcrumb_content_item.html" %}
+{% endblock %}
+
+{% block content_action %}
+  {% if h.check_access('role_update', {'id': c.role.id}) %}
+    {% link_for _('Manage'), controller='ckanext.metadata.controllers.role:RoleController',
+      action='edit', id=c.role.name, class_='btn', icon='wrench' %}
+  {% endif %}
+{% endblock %}
+
+{% block content_primary_nav %}
+  {{ h.build_nav_icon('role_read', _('Definition'), id=c.role.name) }}
+  {{ h.build_nav_icon('role_activity', _('Activity Stream'), id=c.role.name, offset=0) }}
+  {{ h.build_nav_icon('role_about', _('About'), id=c.role.name) }}
+{% endblock %}
+
+{% block secondary_content %}
+  {% snippet "role/snippets/info.html", role=c.role %}
+{% endblock %}

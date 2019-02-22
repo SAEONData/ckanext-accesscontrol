@@ -1,0 +1,19 @@
+{#
+Display a grid of role items.
+
+roles - A list of roles.
+
+Example:
+
+    {% snippet "role/snippets/role_list.html" %}
+
+#}
+{% block role_list %}
+  <ul class="media-grid" data-module="media-grid">
+    {% block role_list_inner %}
+      {% for role in roles %}
+        {% snippet "role/snippets/role_item.html", role=role, position=loop.index %}
+      {% endfor %}
+    {% endblock %}
+  </ul>
+{% endblock %}

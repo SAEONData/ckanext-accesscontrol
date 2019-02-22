@@ -2,6 +2,7 @@
 
 import ckan.plugins.toolkit as tk
 import ckan.model as model
+import ckan.lib.helpers as helpers
 from ckan.logic import clean_dict, tuplize_dict, parse_params
 import ckan.lib.navl.dictization_functions as dict_fns
 
@@ -9,14 +10,57 @@ import ckan.lib.navl.dictization_functions as dict_fns
 class RoleController(tk.BaseController):
 
     def index(self):
-        context = {'model': model, 'session': model.Session, 'user': tk.c.user, 'for_view': True}
-        data_dict = {'all_fields': True}
+        page = tk.h.get_page_number(tk.request.params) or 1
+        items_per_page = 21
+
+        context = {'model': model, 'session': model.Session,
+                   'user': tk.c.user, 'for_view': True}
+
+        q = tk.c.q = tk.request.params.get('q', '')
+        sort_by = tk.c.sort_by_selected = tk.request.params.get('sort')
         try:
-            role_list = tk.get_action('role_list')(context, data_dict)
-            tk.c.roles = role_list
+            tk.check_access('role_list', context)
         except tk.NotAuthorized:
             tk.abort(403, tk._('Not authorized to see this page'))
 
+        if tk.c.userobj:
+            context['user_id'] = tk.c.userobj.id
+            context['user_is_admin'] = tk.c.userobj.sysadmin
+
+        try:
+            data_dict_global_results = {
+                'all_fields': False,
+                'q': q,
+                'sort': sort_by,
+                'type': 'role',
+            }
+            global_results = tk.get_action('role_list')(context, data_dict_global_results)
+        except tk.ValidationError as e:
+            if e.error_dict and e.error_dict.get('message'):
+                msg = e.error_dict['message']
+            else:
+                msg = str(e)
+            tk.h.flash_error(msg)
+            tk.c.page = helpers.Page([], 0)
+            return tk.render('role/index.html')
+
+        data_dict_page_results = {
+            'all_fields': True,
+            'q': q,
+            'sort': sort_by,
+            'limit': items_per_page,
+            'offset': items_per_page * (page - 1),
+        }
+        page_results = tk.get_action('role_list')(context, data_dict_page_results)
+
+        tk.c.page = helpers.Page(
+            collection=global_results,
+            page=page,
+            url=tk.h.pager_url,
+            items_per_page=items_per_page,
+        )
+
+        tk.c.page.items = page_results
         return tk.render('role/index.html')
 
     def new(self, data=None, errors=None, error_summary=None):
@@ -77,6 +121,21 @@ class RoleController(tk.BaseController):
             tk.abort(403, tk._('Unauthorized to delete role'))
         except tk.ObjectNotFound:
             tk.abort(404, tk._('Role not found'))
+
+    def read(self, id):
+        context = {'model': model, 'session': model.Session, 'user': tk.c.user, 'for_view': True}
+        tk.c.role = tk.get_action('role_show')(context, {'id': id})
+        return tk.render('role/read.html')
+
+    def about(self, id):
+        context = {'model': model, 'session': model.Session, 'user': tk.c.user, 'for_view': True}
+        tk.c.role = tk.get_action('role_show')(context, {'id': id})
+        return tk.render('role/about.html')
+
+    def activity(self, id):
+        context = {'model': model, 'session': model.Session, 'user': tk.c.user, 'for_view': True}
+        tk.c.role = tk.get_action('role_show')(context, {'id': id})
+        return tk.render('role/activity_stream.html')
 
     def _save_new(self, context):
         try:
