@@ -1,7 +1,6 @@
 {% extends "role/edit_base.html" %}
 
 {% block primary_content_inner %}
-  <h1 class="page-heading">{{ _('Create Role') if action == 'new' else _('Edit Role') }}</h1>
   {% block form %}
     {{ c.form | safe }}
   {% endblock %}

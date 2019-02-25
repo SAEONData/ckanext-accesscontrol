@@ -5,6 +5,7 @@ import ckan.model as model
 import ckan.lib.helpers as helpers
 from ckan.logic import clean_dict, tuplize_dict, parse_params
 import ckan.lib.navl.dictization_functions as dict_fns
+from ckanext.accesscontrol.logic import available_actions
 
 
 class RoleController(tk.BaseController):
@@ -125,6 +126,7 @@ class RoleController(tk.BaseController):
     def read(self, id):
         context = {'model': model, 'session': model.Session, 'user': tk.c.user, 'for_view': True}
         tk.c.role = tk.get_action('role_show')(context, {'id': id})
+        tk.c.actions = tk.get_action('role_permission_list')(context, {'role_id': id})
         return tk.render('role/read.html')
 
     def about(self, id):
@@ -136,6 +138,36 @@ class RoleController(tk.BaseController):
         context = {'model': model, 'session': model.Session, 'user': tk.c.user, 'for_view': True}
         tk.c.role = tk.get_action('role_show')(context, {'id': id})
         return tk.render('role/activity_stream.html')
+
+    def permissions(self, id, data=None, errors=None, error_summary=None):
+        context = {'model': model, 'session': model.Session, 'user': tk.c.user,
+                   'save': 'save' in tk.request.params}
+
+        if context['save'] and not data and tk.request.method == 'POST':
+            return self._save_permissions(id, context)
+
+        try:
+            allow_actions, deny_actions = self._get_action_lists(id, context)
+        except (tk.ObjectNotFound, tk.NotAuthorized):
+            tk.abort(404, tk._('Role not found'))
+
+        errors = errors or {}
+        error_summary = error_summary or {}
+        vars = {'data': data, 'errors': errors, 'error_summary': error_summary,
+                'allow_actions': allow_actions, 'deny_actions': deny_actions}
+
+        tk.c.role = tk.get_action('role_show')(context, {'id': id})
+        tk.c.form = tk.render('role/permissions_form.html', extra_vars=vars)
+        return tk.render('role/permissions.html', extra_vars=vars)
+
+    @staticmethod
+    def _get_action_lists(id, context):
+        all_actions = available_actions()
+        allow_actions = tk.get_action('role_permission_list')(context, {'role_id': id})
+        deny_actions = list(set(all_actions) - set(allow_actions))
+        allow_actions.sort()
+        deny_actions.sort()
+        return allow_actions, deny_actions
 
     def _save_new(self, context):
         try:
@@ -172,3 +204,22 @@ class RoleController(tk.BaseController):
             errors = e.error_dict
             error_summary = e.error_summary
             return self.edit(id, data_dict, errors, error_summary)
+
+    def _save_permissions(self, id, context):
+        try:
+            data_dict = clean_dict(dict_fns.unflatten(tuplize_dict(parse_params(tk.request.params))))
+            data_dict['id'] = id
+            context['message'] = data_dict.get('log_message', '')
+            # tk.get_action('role_permission_grant')(context, data_dict)
+            # tk.get_action('role_permission_revoke')(context, data_dict)
+            tk.h.redirect_to('role_index')
+        except tk.ObjectNotFound:
+            tk.abort(404, tk._('Role not found'))
+        except tk.NotAuthorized, e:
+            tk.abort(403, e.message)
+        except dict_fns.DataError:
+            tk.abort(400, tk._(u'Integrity Error'))
+        except tk.ValidationError, e:
+            errors = e.error_dict
+            error_summary = e.error_summary
+            return self.permissions(id, data_dict, errors, error_summary)

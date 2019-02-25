@@ -28,9 +28,10 @@ class RolesPlugin(p.SingletonPlugin):
             m.connect('role_new', '/role/new', action='new')
             m.connect('role_edit', '/role/edit/{id}', action='edit', ckan_icon='pencil-square-o')
             m.connect('role_delete', '/role/delete/{id}', action='delete')
-            m.connect('role_read', '/role/{id}', action='read', ckan_icon='file-text-o')
+            m.connect('role_read', '/role/{id}', action='read', ckan_icon='shield')
             m.connect('role_about', '/role/about/{id}', action='about', ckan_icon='info-circle')
             m.connect('role_activity', '/role/activity/{id}', action='activity', ckan_icon='clock-o')
+            m.connect('role_permissions', '/role/permissions/{id}', action='permissions', ckan_icon='shield')
 
         return map
 

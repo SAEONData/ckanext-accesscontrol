@@ -1,5 +1,15 @@
 {% extends "role/read_base.html" %}
 
 {% block primary_content_inner %}
-  {# list action permissions #}
+  <h3 class="page-heading">{{ _('{0} permitted action(s)'.format(c.actions|length)) }}</h3>
+  <table class="table table-header table-hover table-bordered" id="role-action-table">
+    <thead>
+      <tr><th>{{ _('Action Name') }}</th></tr>
+    </thead>
+    <tbody>
+      {% for action in c.actions %}
+      <tr><td>{{ action }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
 {% endblock %}
