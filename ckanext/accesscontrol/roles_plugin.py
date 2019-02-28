@@ -86,8 +86,8 @@ class RolesPlugin(p.SingletonPlugin):
             'permission_delete': action.permission_delete,
             'permission_action_assign': action.permission_action_assign,
             'permission_action_unassign': action.permission_action_unassign,
-            # 'permission_show': action.permission_show,
-            # 'permission_list': action.permission_list,
+            'permission_show': action.permission_show,
+            'permission_list': action.permission_list,
         }
 
     def get_auth_functions(self):

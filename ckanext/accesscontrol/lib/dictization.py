@@ -43,3 +43,17 @@ def permission_action_list_save(action_list, context):
     for action in unsaved_actions:
         permission_action = extmodel.PermissionAction(permission_id=permission.id, action_name=action)
         session.add(permission_action)
+
+
+def permission_dictize(permission, context):
+    session = context['session']
+    permission_dict = d.table_dictize(permission, context)
+    action_names = session.query(extmodel.PermissionAction.action_name) \
+        .filter_by(permission_id=permission.id) \
+        .all()
+    permission_dict['actions'] = [action for (action,) in action_names]
+    return permission_dict
+
+
+def permission_list_dictize(permission_list, context):
+    return [permission_dictize(permission, context) for permission in permission_list]

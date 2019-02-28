@@ -757,3 +757,44 @@ def permission_action_unassign(context, data_dict):
 
     if not defer_commit:
         model.repo.commit()
+
+
+@tk.side_effect_free
+def permission_show(context, data_dict):
+    """
+    Return a permission definition.
+
+    You must be a sysadmin to view permissions.
+
+    :param id: the id of the permission
+    :type id: string
+
+    :rtype: dictionary
+    """
+    log.debug("Retrieving permission: %r", data_dict)
+
+    permission_id = tk.get_or_bust(data_dict, 'id')
+    permission = extmodel.Permission.get(permission_id)
+    if permission is None:
+        raise tk.ObjectNotFound('%s: %s' % (_('Not found'), _('Permission')))
+
+    tk.check_access('permission_show', context, data_dict)
+
+    return dictization.permission_dictize(permission, context)
+
+
+@tk.side_effect_free
+def permission_list(context, data_dict):
+    """
+    Return a list of the site's permissions.
+
+    You must be a sysadmin to list permissions.
+
+    :rtype: list of dicts
+    """
+    log.debug("Retrieving permission list: %r", data_dict)
+    tk.check_access('permission_list', context, data_dict)
+
+    session = context['session']
+    permissions = session.query(extmodel.Permission).all()
+    return dictization.permission_list_dictize(permissions, context)
