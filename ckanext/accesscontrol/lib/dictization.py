@@ -48,10 +48,13 @@ def permission_action_list_save(action_list, context):
 def permission_dictize(permission, context):
     session = context['session']
     permission_dict = d.table_dictize(permission, context)
-    action_names = session.query(extmodel.PermissionAction.action_name) \
-        .filter_by(permission_id=permission.id) \
-        .all()
-    permission_dict['actions'] = [action for (action,) in action_names]
+
+    if context.get('include_actions'):
+        action_names = session.query(extmodel.PermissionAction.action_name) \
+            .filter_by(permission_id=permission.id) \
+            .all()
+        permission_dict['actions'] = [action for (action,) in action_names]
+
     return permission_dict
 
 

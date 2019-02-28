@@ -369,7 +369,7 @@ def role_permission_revoke(context, data_dict):
 @tk.side_effect_free
 def role_permission_list(context, data_dict):
     """
-    Return a list of actions that a role is permitted to perform.
+    Return a list of permissions for a role.
 
     You must be a sysadmin to list role permissions.
 
@@ -390,11 +390,10 @@ def role_permission_list(context, data_dict):
     else:
         raise tk.ObjectNotFound('%s: %s' % (_('Not found'), _('Role')))
 
-    action_names = session.query(extmodel.RolePermission.action_name) \
+    permissions = session.query(extmodel.Permission).join(extmodel.RolePermission) \
         .filter_by(role_id=role_id, state='active') \
         .all()
-    action_names = [action_name for (action_name,) in action_names]
-    return action_names
+    return dictization.permission_list_dictize(permissions, context)
 
 
 def user_role_assign(context, data_dict):
@@ -780,6 +779,7 @@ def permission_show(context, data_dict):
 
     tk.check_access('permission_show', context, data_dict)
 
+    context['include_actions'] = True
     return dictization.permission_dictize(permission, context)
 
 
@@ -796,5 +796,6 @@ def permission_list(context, data_dict):
     tk.check_access('permission_list', context, data_dict)
 
     session = context['session']
+    context['include_actions'] = True
     permissions = session.query(extmodel.Permission).all()
     return dictization.permission_list_dictize(permissions, context)
