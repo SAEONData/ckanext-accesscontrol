@@ -23,3 +23,23 @@ def role_permission_dict_save(role_permission_dict, context):
 
 def user_role_dict_save(user_role_dict, context):
     return d.table_dict_save(user_role_dict, extmodel.UserRole, context)
+
+
+def permission_dict_save(permission_dict, context):
+    return d.table_dict_save(permission_dict, extmodel.Permission, context)
+
+
+def permission_action_list_save(action_list, context):
+    session = context['session']
+    permission = context['permission']
+
+    # create permission actions if they don't exist
+    saved_actions = session.query(extmodel.PermissionAction.action_name) \
+        .filter_by(permission_id=permission.id) \
+        .filter(extmodel.PermissionAction.action_name.in_(action_list)) \
+        .all()
+    saved_actions = [saved_action for (saved_action,) in saved_actions]
+    unsaved_actions = set(action_list) - set(saved_actions)
+    for action in unsaved_actions:
+        permission_action = extmodel.PermissionAction(permission_id=permission.id, action_name=action)
+        session.add(permission_action)

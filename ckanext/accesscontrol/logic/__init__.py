@@ -8,7 +8,7 @@ _actions_with_automatic_permission = (
 )
 
 
-def is_action_permission_automatic(action_name):
+def is_permission_action_automatic(action_name):
     """
     Indicates whether the given action does not require an explicit role permission.
     :returns: boolean

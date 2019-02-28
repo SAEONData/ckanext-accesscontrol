@@ -64,3 +64,33 @@ def user_role_list(context, data_dict):
 def role_user_list(context, data_dict):
     # sysadmins only
     return {'success': False}
+
+
+def permission_create(context, data_dict):
+    # sysadmins only
+    return {'success': False}
+
+
+def permission_delete(context, data_dict):
+    # sysadmins only
+    return {'success': False}
+
+
+def permission_action_assign(context, data_dict):
+    # sysadmins only
+    return {'success': False}
+
+
+def permission_action_unassign(context, data_dict):
+    # sysadmins only
+    return {'success': False}
+
+
+def permission_show(context, data_dict):
+    # sysadmins only
+    return {'success': False}
+
+
+def permission_list(context, data_dict):
+    # sysadmins only
+    return {'success': False}

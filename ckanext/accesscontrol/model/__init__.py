@@ -20,3 +20,13 @@ from user_role import (
     user_role_table,
     user_role_revision_table,
 )
+
+from permission import (
+    Permission,
+    permission_table,
+)
+
+from permission_action import (
+    PermissionAction,
+    permission_action_table,
+)

@@ -15,6 +15,8 @@ def init_tables():
         role_permission_revision_table,
         user_role_table,
         user_role_revision_table,
+        permission_table,
+        permission_action_table,
     )
     for table in tables:
         if not table.exists():

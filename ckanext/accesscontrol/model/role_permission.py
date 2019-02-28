@@ -10,8 +10,8 @@ role_permission_table = Table(
     'role_permission', meta.metadata,
     Column('id', types.UnicodeText, primary_key=True, default=_types.make_uuid),
     Column('role_id', types.UnicodeText, ForeignKey('role.id'), nullable=False),
-    Column('action_name', types.UnicodeText, nullable=False),
-    UniqueConstraint('role_id', 'action_name'),
+    Column('permission_id', types.UnicodeText, ForeignKey('permission.id'), nullable=False),
+    UniqueConstraint('role_id', 'permission_id'),
 )
 
 vdm.sqlalchemy.make_table_stateful(role_permission_table)
@@ -23,12 +23,12 @@ class RolePermission(vdm.sqlalchemy.RevisionedObjectMixin,
                      domain_object.DomainObject):
 
     @classmethod
-    def lookup(cls, role_id, action_name):
+    def lookup(cls, role_id, permission_id):
         """
-        Returns a RolePermission object by role id and action name.
+        Returns a RolePermission object by role and permission.
         """
         return meta.Session.query(cls) \
-            .filter_by(role_id=role_id, action_name=action_name) \
+            .filter_by(role_id=role_id, permission_id=permission_id) \
             .first()
 
 

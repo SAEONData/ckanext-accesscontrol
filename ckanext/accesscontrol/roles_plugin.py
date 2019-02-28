@@ -82,6 +82,12 @@ class RolesPlugin(p.SingletonPlugin):
             'user_role_unassign': action.user_role_unassign,
             'user_role_list': action.user_role_list,
             'role_user_list': action.role_user_list,
+            'permission_create': action.permission_create,
+            'permission_delete': action.permission_delete,
+            'permission_action_assign': action.permission_action_assign,
+            'permission_action_unassign': action.permission_action_unassign,
+            # 'permission_show': action.permission_show,
+            # 'permission_list': action.permission_list,
         }
 
     def get_auth_functions(self):
@@ -99,6 +105,12 @@ class RolesPlugin(p.SingletonPlugin):
             'user_role_unassign': auth.user_role_unassign,
             'user_role_list': auth.user_role_list,
             'role_user_list': auth.role_user_list,
+            'permission_create': auth.permission_create,
+            'permission_delete': auth.permission_delete,
+            'permission_action_assign': auth.permission_action_assign,
+            'permission_action_unassign': auth.permission_action_unassign,
+            'permission_show': auth.permission_show,
+            'permission_list': auth.permission_list,
         }
 
     def update_config(self, config):
