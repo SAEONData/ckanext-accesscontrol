@@ -604,6 +604,10 @@ def permission_create(context, data_dict):
     :param actions: names of action functions to be associated with the given content
         type and operation (optional)
     :type actions: list of strings
+
+    :returns: the newly created permission (unless 'return_id_only' is set to True
+              in the context, in which case just the permission id will be returned)
+    :rtype: dictionary
     """
     log.info("Creating permission: %r", data_dict)
     tk.check_access('permission_create', context, data_dict)
@@ -611,6 +615,7 @@ def permission_create(context, data_dict):
     model = context['model']
     session = context['session']
     defer_commit = context.get('defer_commit', False)
+    return_id_only = context.get('return_id_only', False)
 
     data, errors = tk.navl_validate(data_dict, schema.permission_create_schema(), context)
     if errors:
@@ -625,6 +630,10 @@ def permission_create(context, data_dict):
 
     if not defer_commit:
         model.repo.commit()
+
+    output = permission.id if return_id_only \
+        else tk.get_action('permission_show')(context, {'id': permission.id})
+    return output
 
 
 def permission_delete(context, data_dict):

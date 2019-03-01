@@ -17,6 +17,16 @@ permission_table = Table(
 class Permission(domain_object.DomainObject):
 
     @classmethod
+    def get(cls, reference):
+        """
+        Returns a Permission object referenced by its id.
+        """
+        if not reference:
+            return None
+
+        return meta.Session.query(cls).get(reference)
+
+    @classmethod
     def lookup(cls, content_type, operation):
         """
         Returns a Permission object by content type and operation.
