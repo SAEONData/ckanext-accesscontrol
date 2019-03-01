@@ -4,8 +4,7 @@ import ckan.plugins as p
 import ckan.logic
 from ckan.common import _
 import ckan.plugins.toolkit as tk
-import ckanext.accesscontrol.logic.action as action
-import ckanext.accesscontrol.logic.auth as auth
+from ckanext.accesscontrol.logic import action, auth, permission_setup_actions
 from ckanext.accesscontrol.config import config as accesscontrol_config
 
 
@@ -84,12 +83,10 @@ class RolesPlugin(p.SingletonPlugin):
             'user_role_unassign': action.user_role_unassign,
             'user_role_list': action.user_role_list,
             'role_user_list': action.role_user_list,
-            'permission_create': action.permission_create,
-            'permission_delete': action.permission_delete,
-            'permission_action_assign': action.permission_action_assign,
-            'permission_action_unassign': action.permission_action_unassign,
-            'permission_show': action.permission_show,
             'permission_list': action.permission_list,
+            'permission_define': permission_setup_actions.permission_define,
+            'permission_undefine': permission_setup_actions.permission_undefine,
+            'permission_cleanup': permission_setup_actions.permission_cleanup,
         }
 
     def get_auth_functions(self):
@@ -107,12 +104,10 @@ class RolesPlugin(p.SingletonPlugin):
             'user_role_unassign': auth.user_role_unassign,
             'user_role_list': auth.user_role_list,
             'role_user_list': auth.role_user_list,
-            'permission_create': auth.permission_create,
-            'permission_delete': auth.permission_delete,
-            'permission_action_assign': auth.permission_action_assign,
-            'permission_action_unassign': auth.permission_action_unassign,
-            'permission_show': auth.permission_show,
             'permission_list': auth.permission_list,
+            'permission_define': auth.permission_define,
+            'permission_undefine': auth.permission_undefine,
+            'permission_cleanup': auth.permission_cleanup,
         }
 
     def update_config(self, config):

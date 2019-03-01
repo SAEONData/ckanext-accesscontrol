@@ -38,27 +38,16 @@ def role_show_schema():
     return schema
 
 
-def permission_create_schema():
+def permission_define_schema():
     schema = {
-        'id': [ignore],
         'content_type': [not_missing, not_empty, unicode, name_validator],
         'operation': [not_missing, not_empty, unicode, name_validator],
-        'actions': [ignore_missing, list_of_strings, v.action_list_validator],
-        '__after': [v.permission_unique_validator, ignore],
-    }
-    return schema
-
-
-def permission_action_assign_schema():
-    schema = {
-        'content_type': [not_missing, not_empty, unicode],
-        'operation': [not_missing, not_empty, unicode],
         'actions': [not_missing, not_empty, list_of_strings, v.action_list_validator],
     }
     return schema
 
 
-def permission_action_unassign_schema():
+def permission_undefine_schema():
     schema = {
         'content_type': [not_missing, not_empty, unicode],
         'operation': [not_missing, not_empty, unicode],

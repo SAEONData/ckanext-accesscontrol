@@ -376,7 +376,7 @@ def role_permission_list(context, data_dict):
     :param role_id: the id or name of the role
     :type role_id: string
 
-    :returns: list of action names
+    :returns: list of dicts
     """
     log.debug("Retrieving role permission list: %r", data_dict)
     tk.check_access('role_permission_list', context, data_dict)
@@ -584,214 +584,6 @@ def role_user_list(context, data_dict):
     return result
 
 
-def permission_create(context, data_dict):
-    """
-    Create a permission definition, and optionally associate action(s) with it.
-
-    A permission consists of an operation on a content type, e.g. 'edit' on
-    'dataset'. Such a permission may be associated with one or more actions,
-    e.g. 'package_update', 'resource_update', and 'package_relationship_update'.
-
-    Calls to this function should normally be scripted, or coded in an extension,
-    rather than being made available in the UI.
-
-    :param content_type: identifies a conceptual object type, which might represent
-        one or more underlying domain object types, or even a partition of an underlying
-        domain object type (e.g. a specific 'type' of package or group)
-    :type content_type: string
-    :param operation: identifies a conceptual action, e.g. 'create', 'read', 'validate'
-    :type operation: string
-    :param actions: names of action functions to be associated with the given content
-        type and operation (optional)
-    :type actions: list of strings
-
-    :returns: the newly created permission (unless 'return_id_only' is set to True
-              in the context, in which case just the permission id will be returned)
-    :rtype: dictionary
-    """
-    log.info("Creating permission: %r", data_dict)
-    tk.check_access('permission_create', context, data_dict)
-
-    model = context['model']
-    session = context['session']
-    defer_commit = context.get('defer_commit', False)
-    return_id_only = context.get('return_id_only', False)
-
-    data, errors = tk.navl_validate(data_dict, schema.permission_create_schema(), context)
-    if errors:
-        session.rollback()
-        raise tk.ValidationError(errors)
-
-    permission = dictization.permission_dict_save(data, context)
-    action_list = data.get('actions')
-    if action_list:
-        context['permission'] = permission
-        dictization.permission_action_list_save(action_list, context)
-
-    if not defer_commit:
-        model.repo.commit()
-
-    output = permission.id if return_id_only \
-        else tk.get_action('permission_show')(context, {'id': permission.id})
-    return output
-
-
-def permission_delete(context, data_dict):
-    """
-    Delete a permission definition and associated permission actions.
-
-    Note that this cascades to related role permissions.
-
-    Calls to this function should normally be scripted, or coded in an extension,
-    rather than being made available in the UI.
-
-    :param content_type: the permission content type
-    :type content_type: string
-    :param operation: the permission operation
-    :type operation: string
-    """
-    log.info("Deleting permission: %r", data_dict)
-    tk.check_access('permission_delete', context, data_dict)
-
-    model = context['model']
-    session = context['session']
-    user = context['user']
-    defer_commit = context.get('defer_commit', False)
-
-    content_type, operation = tk.get_or_bust(data_dict, ['content_type', 'operation'])
-
-    permission = extmodel.Permission.lookup(content_type, operation)
-    if permission is None:
-        raise tk.ObjectNotFound('%s: %s' % (_('Not found'), _('Permission')))
-
-    # delete associated permission actions
-    permission_actions = session.query(extmodel.PermissionAction) \
-        .filter_by(permission_id=permission.id) \
-        .all()
-    for permission_action in permission_actions:
-        permission_action.delete()
-
-    # cascade delete to role permissions
-    role_permissions = session.query(extmodel.RolePermission) \
-        .filter_by(permission_id=permission.id) \
-        .filter_by(state='active') \
-        .all()
-    if role_permissions:
-        rev = model.repo.new_revision()
-        rev.author = user
-        rev.message = _("Delete permission '%s' on '%s'") % (operation, content_type)
-        for role_permission in role_permissions:
-            role_permission.delete()
-
-    permission.delete()
-
-    if not defer_commit:
-        model.repo.commit()
-
-
-def permission_action_assign(context, data_dict):
-    """
-    Associate one or more action functions with a permission.
-
-    Calls to this function should normally be scripted, or coded in an extension,
-    rather than being made available in the UI.
-
-    :param content_type: the permission content type
-    :type content_type: string
-    :param operation: the permission operation
-    :type operation: string
-    :param actions: names of action functions to be associated with the permission
-    :type actions: list of strings
-    """
-    log.info("Assigning actions to permission: %r", data_dict)
-    tk.check_access('permission_action_assign', context, data_dict)
-
-    model = context['model']
-    session = context['session']
-    defer_commit = context.get('defer_commit', False)
-
-    data, errors = tk.navl_validate(data_dict, schema.permission_action_assign_schema(), context)
-    if errors:
-        session.rollback()
-        raise tk.ValidationError(errors)
-
-    permission = extmodel.Permission.lookup(data['content_type'], data['operation'])
-    if permission is None:
-        raise tk.ObjectNotFound('%s: %s' % (_('Not found'), _('Permission')))
-
-    context['permission'] = permission
-    dictization.permission_action_list_save(data['actions'], context)
-
-    if not defer_commit:
-        model.repo.commit()
-
-
-def permission_action_unassign(context, data_dict):
-    """
-    Dissociate one or more action functions from a permission.
-
-    Calls to this function should normally be scripted, or coded in an extension,
-    rather than being made available in the UI.
-
-    :param content_type: the permission content type
-    :type content_type: string
-    :param operation: the permission operation
-    :type operation: string
-    :param actions: names of action functions to be dissociated from the permission
-    :type actions: list of strings
-    """
-    log.info("Unassigning actions from permission: %r", data_dict)
-    tk.check_access('permission_action_unassign', context, data_dict)
-
-    model = context['model']
-    session = context['session']
-    defer_commit = context.get('defer_commit', False)
-
-    data, errors = tk.navl_validate(data_dict, schema.permission_action_unassign_schema(), context)
-    if errors:
-        session.rollback()
-        raise tk.ValidationError(errors)
-
-    permission = extmodel.Permission.lookup(data['content_type'], data['operation'])
-    if permission is None:
-        raise tk.ObjectNotFound('%s: %s' % (_('Not found'), _('Permission')))
-
-    for action in data['actions']:
-        permission_action = session.query(extmodel.PermissionAction) \
-            .filter_by(permission_id=permission.id, action_name=action) \
-            .first()
-        if permission_action:
-            permission_action.delete()
-
-    if not defer_commit:
-        model.repo.commit()
-
-
-@tk.side_effect_free
-def permission_show(context, data_dict):
-    """
-    Return a permission definition.
-
-    You must be a sysadmin to view permissions.
-
-    :param id: the id of the permission
-    :type id: string
-
-    :rtype: dictionary
-    """
-    log.debug("Retrieving permission: %r", data_dict)
-
-    permission_id = tk.get_or_bust(data_dict, 'id')
-    permission = extmodel.Permission.get(permission_id)
-    if permission is None:
-        raise tk.ObjectNotFound('%s: %s' % (_('Not found'), _('Permission')))
-
-    tk.check_access('permission_show', context, data_dict)
-
-    context['include_actions'] = True
-    return dictization.permission_dictize(permission, context)
-
-
 @tk.side_effect_free
 def permission_list(context, data_dict):
     """
@@ -799,12 +591,17 @@ def permission_list(context, data_dict):
 
     You must be a sysadmin to list permissions.
 
+    :param include_actions: include a list of associated action names in the result
+        dictionaries (optional, default: ``False``)
+    :type include_actions: boolean
+
     :rtype: list of dicts
     """
     log.debug("Retrieving permission list: %r", data_dict)
     tk.check_access('permission_list', context, data_dict)
 
     session = context['session']
-    context['include_actions'] = True
+    context['include_actions'] = asbool(data_dict.get('include_actions'))
+
     permissions = session.query(extmodel.Permission).all()
     return dictization.permission_list_dictize(permissions, context)
