@@ -1,7 +1,7 @@
 # encoding: utf-8
 
 import ckan.plugins as p
-from ckanext.accesscontrol.openidconnect_config import config
+from ckanext.accesscontrol.config import config
 from ckanext.accesscontrol.logic import openidconnect
 
 
@@ -14,6 +14,10 @@ class OpenIDConnectPlugin(p.SingletonPlugin):
         """
         Configure routes.
         """
+        # load config here (instead of in IConfigurable.configure) because before_map is called before configure
+        config.load_common_options()
+        config.load_openidconnect_options()
+
         with map.submapper(controller='ckanext.accesscontrol.controllers.openidconnect:OpenIDConnectController') as m:
             m.connect('/user/login', action='login')
             m.connect('/user/_logout', action='logout')

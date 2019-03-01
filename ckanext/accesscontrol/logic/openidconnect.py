@@ -10,7 +10,7 @@ from requests import RequestException
 import ckan.plugins.toolkit as tk
 from ckan.common import _
 from ckan.lib.redis import connect_to_redis
-from ckanext.accesscontrol.openidconnect_config import config
+from ckanext.accesscontrol.config import config
 
 log = logging.getLogger(__name__)
 

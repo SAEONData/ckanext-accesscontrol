@@ -6,6 +6,7 @@ from ckan.common import _
 import ckan.plugins.toolkit as tk
 import ckanext.accesscontrol.logic.action as action
 import ckanext.accesscontrol.logic.auth as auth
+from ckanext.accesscontrol.config import config as accesscontrol_config
 
 
 class RolesPlugin(p.SingletonPlugin):
@@ -15,6 +16,7 @@ class RolesPlugin(p.SingletonPlugin):
     p.implements(p.IActions)
     p.implements(p.IAuthFunctions)
     p.implements(p.IConfigurer)
+    p.implements(p.IConfigurable)
 
     # pointer to the check_access function in core CKAN
     core_check_access = None
@@ -116,3 +118,6 @@ class RolesPlugin(p.SingletonPlugin):
     def update_config(self, config):
         tk.add_template_directory(config, 'templates')
         tk.add_public_directory(config, 'public')
+
+    def configure(self, config):
+        accesscontrol_config.load_common_options()
