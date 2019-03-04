@@ -47,3 +47,25 @@ class Permission(factory.Factory):
         context = {'user': ckan_factories._get_action_user_name(kwargs)}
 
         return helpers.call_action('permission_define', context=context, **kwargs)
+
+
+class RolePermission(factory.Factory):
+    FACTORY_FOR = extmodel.RolePermission
+
+    @classmethod
+    def _build(cls, target_class, *args, **kwargs):
+        raise NotImplementedError(".build() isn't supported in CKAN")
+
+    @classmethod
+    def _create(cls, target_class, *args, **kwargs):
+        if args:
+            assert False, "Positional args aren't supported, use keyword args."
+
+        context = {'user': ckan_factories._get_action_user_name(kwargs)}
+        role_id = kwargs.pop('role_id', None) or Role()['id']
+        permission_id = kwargs.pop('permission_id', None) or Permission()['id']
+
+        return helpers.call_action('role_permission_grant', context=context,
+                                   role_id=role_id,
+                                   permission_id=permission_id,
+                                   **kwargs)
