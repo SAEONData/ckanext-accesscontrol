@@ -6,6 +6,7 @@ import ckan.plugins.toolkit as tk
 from ckan.common import _
 from ckanext.accesscontrol.logic import schema
 import ckanext.accesscontrol.model as extmodel
+from ckanext.accesscontrol.lib import dictization
 
 log = logging.getLogger(__name__)
 
@@ -38,6 +39,9 @@ def permission_define(context, data_dict):
     :param actions: names of action functions to be associated with the given content
         type and operation
     :type actions: list of strings
+
+    :returns: the new or updated permission with its associated actions
+    :rtype: dictionary
     """
     log.info("Defining permission: %r", data_dict)
     tk.check_access('permission_define', context, data_dict)
@@ -58,6 +62,7 @@ def permission_define(context, data_dict):
     if permission is None:
         permission = extmodel.Permission(content_type=data['content_type'], operation=data['operation'])
         session.add(permission)
+        session.flush()  # so that we get the new permission id
 
     # create permission actions if they don't exist
     saved_actions = session.query(extmodel.PermissionAction.action_name) \
@@ -72,6 +77,9 @@ def permission_define(context, data_dict):
 
     if not defer_commit:
         model.repo.commit()
+
+    context['include_actions'] = True
+    return dictization.permission_dictize(permission, context)
 
 
 def permission_undefine(context, data_dict):
@@ -91,6 +99,9 @@ def permission_undefine(context, data_dict):
     :param actions: names of action functions to be dissociated from the given content
         type and operation
     :type actions: list of strings
+
+    :returns: the updated permission with its remaining associated actions
+    :rtype: dictionary
     """
     log.info("Undefining permission: %r", data_dict)
     tk.check_access('permission_undefine', context, data_dict)
@@ -121,6 +132,9 @@ def permission_undefine(context, data_dict):
 
     if not defer_commit:
         model.repo.commit()
+
+    context['include_actions'] = True
+    return dictization.permission_dictize(permission, context)
 
 
 def permission_cleanup(context, data_dict):

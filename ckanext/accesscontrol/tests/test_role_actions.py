@@ -30,6 +30,11 @@ class TestRoleActions(ActionTestBase):
                                        name='sysadmin')
         assert_error(result, 'name', "The name 'sysadmin' is reserved for the built-in system administrator role.")
 
+    def test_create_invalid_missing_name(self):
+        result, obj = self.test_action('role_create', should_error=True,
+                                       name='')
+        assert_error(result, 'name', 'Missing value')
+
     def test_update_valid(self):
         role = ckanext_factories.Role()
         input_dict = {
