@@ -1,6 +1,7 @@
 # encoding: utf-8
 
 import ckan.lib.dictization as d
+import ckan.plugins.toolkit as tk
 import ckanext.accesscontrol.model as extmodel
 
 
@@ -21,6 +22,14 @@ def role_permission_dict_save(role_permission_dict, context):
     return d.table_dict_save(role_permission_dict, extmodel.RolePermission, context)
 
 
+def role_permission_dictize(role_permission, context):
+    role_permission_dict = d.table_dictize(role_permission, context)
+    permission = extmodel.Permission.get(role_permission.permission_id)
+    permission_dict = permission_dictize(permission, context)
+    role_permission_dict['display_name'] = permission_dict['display_name']
+    return role_permission_dict
+
+
 def user_role_dict_save(user_role_dict, context):
     return d.table_dict_save(user_role_dict, extmodel.UserRole, context)
 
@@ -28,6 +37,7 @@ def user_role_dict_save(user_role_dict, context):
 def permission_dictize(permission, context):
     session = context['session']
     permission_dict = d.table_dictize(permission, context)
+    permission_dict['display_name'] = tk._('%s on %s') % (permission.operation, permission.content_type)
 
     if context.get('include_actions'):
         action_names = session.query(extmodel.PermissionAction.action_name) \

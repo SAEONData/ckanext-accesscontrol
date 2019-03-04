@@ -276,14 +276,14 @@ def role_list(context, data_dict):
 
 def role_permission_grant(context, data_dict):
     """
-    Grant a role the permission to perform an action.
+    Grant a permission to a role.
 
     You must be a sysadmin to grant permissions.
 
     :param role_id: the id or name of the role
     :type role_id: string
-    :param action_name: the name of the action API function
-    :type action_name: string
+    :param permission_id: the id of the permission
+    :type permission_id: string
     """
     log.info("Granting permission to role: %r", data_dict)
     tk.check_access('role_permission_grant', context, data_dict)
@@ -292,46 +292,47 @@ def role_permission_grant(context, data_dict):
     user = context['user']
     defer_commit = context.get('defer_commit', False)
 
-    role_id, action_name = tk.get_or_bust(data_dict, ['role_id', 'action_name'])
+    role_id, permission_id = tk.get_or_bust(data_dict, ['role_id', 'permission_id'])
     role = extmodel.Role.get(role_id)
     if role is not None and role.state == 'active':
         role_id = role.id
     else:
         raise tk.ObjectNotFound('%s: %s' % (_('Not found'), _('Role')))
 
-    try:
-        tk.get_action(action_name)
-    except:
-        raise tk.ValidationError({'action_name': [_('The action %s does not exist') % action_name]})
+    permission = extmodel.Permission.get(permission_id)
+    if permission is None:
+        raise tk.ObjectNotFound('%s: %s' % (_('Not found'), _('Permission')))
 
-    role_permission = extmodel.RolePermission.lookup(role_id, action_name)
+    role_permission = extmodel.RolePermission.lookup(role_id, permission_id)
     if role_permission and role_permission.state == 'active':
         raise tk.ValidationError(_('The specified permission has already been granted to the role'))
 
     data_dict['role_id'] = role_id
-    dictization.role_permission_dict_save(data_dict, context)
+    role_permission = dictization.role_permission_dict_save(data_dict, context)
 
     rev = model.repo.new_revision()
     rev.author = user
     if 'message' in context:
         rev.message = context['message']
     else:
-        rev.message = _(u'REST API: Grant permission to role %s: %s') % (role.name, action_name)
+        rev.message = _(u'REST API: Grant permission to role %s: %s on %s') % (role.name, permission.operation, permission.content_type)
 
     if not defer_commit:
         model.repo.commit()
 
+    return dictization.role_permission_dictize(role_permission, context)
+
 
 def role_permission_revoke(context, data_dict):
     """
-    Revoke a role's permission to perform an action.
+    Revoke a permission from a role.
 
     You must be a sysadmin to revoke permissions.
 
     :param role_id: the id or name of the role
     :type role_id: string
-    :param action_name: the name of the action API function
-    :type action_name: string
+    :param permission_id: the id of the permission
+    :type permission_id: string
     """
     log.info("Revoking permission from role: %r", data_dict)
     tk.check_access('role_permission_revoke', context, data_dict)
@@ -340,19 +341,18 @@ def role_permission_revoke(context, data_dict):
     user = context['user']
     defer_commit = context.get('defer_commit', False)
 
-    role_id, action_name = tk.get_or_bust(data_dict, ['role_id', 'action_name'])
+    role_id, permission_id = tk.get_or_bust(data_dict, ['role_id', 'permission_id'])
     role = extmodel.Role.get(role_id)
     if role is not None and role.state == 'active':
         role_id = role.id
     else:
         raise tk.ObjectNotFound('%s: %s' % (_('Not found'), _('Role')))
 
-    try:
-        tk.get_action(action_name)
-    except:
-        raise tk.ValidationError({'action_name': [_('The action %s does not exist') % action_name]})
+    permission = extmodel.Permission.get(permission_id)
+    if permission is None:
+        raise tk.ObjectNotFound('%s: %s' % (_('Not found'), _('Permission')))
 
-    role_permission = extmodel.RolePermission.lookup(role_id, action_name)
+    role_permission = extmodel.RolePermission.lookup(role_id, permission_id)
     if not role_permission or role_permission.state != 'active':
         raise tk.ValidationError(_('The role does not have the specified permission'))
 
@@ -360,7 +360,7 @@ def role_permission_revoke(context, data_dict):
 
     rev = model.repo.new_revision()
     rev.author = user
-    rev.message = _(u'REST API: Revoke permission from role %s: %s') % (role.name, action_name)
+    rev.message = _(u'REST API: Revoke permission from role %s: %s on %s') % (role.name, permission.operation, permission.content_type)
 
     if not defer_commit:
         model.repo.commit()
