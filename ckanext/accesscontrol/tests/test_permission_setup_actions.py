@@ -44,6 +44,41 @@ class TestPermissionSetupActions(ActionTestBase):
         input_dict['actions'] += permission['actions']
         self._check_permission(**input_dict)
 
+    def test_define_valid_undelete_1(self):
+        permission = ckanext_factories.Permission()
+        result, _ = self.test_action('permission_undefine',
+                                     content_type=permission['content_type'],
+                                     operation=permission['operation'],
+                                     actions=permission['actions'][:-1])
+        deleted_action = model.Session.query(extmodel.PermissionAction) \
+            .filter_by(permission_id=permission['id'], action_name=permission['actions'][0]) \
+            .first()
+        assert deleted_action.state == 'deleted'
+        assert result['actions'] == [permission['actions'][1]]
+        result, _ = self.test_action('permission_define',
+                                     content_type=permission['content_type'],
+                                     operation=permission['operation'],
+                                     actions=permission['actions'])
+        assert deleted_action.state == 'active'
+        assert set(result['actions']) == set(permission['actions'])
+
+    def test_define_valid_undelete_2(self):
+        permission = ckanext_factories.Permission()
+        result, _ = self.test_action('permission_undefine',
+                                     content_type=permission['content_type'],
+                                     operation=permission['operation'],
+                                     actions=permission['actions'])
+        assert result['actions'] == []
+        call_action('permission_cleanup')
+        perm = extmodel.Permission.get(permission['id'])
+        assert perm.state == 'deleted'
+        result, _ = self.test_action('permission_define',
+                                     content_type=permission['content_type'],
+                                     operation=permission['operation'],
+                                     actions=permission['actions'])
+        assert perm.state == 'active'
+        assert set(result['actions']) == set(permission['actions'])
+
     def test_define_invalid_missing_values(self):
         result, _ = self.test_action('permission_define', should_error=True,
                                      content_type='',
