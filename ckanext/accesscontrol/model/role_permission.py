@@ -23,6 +23,16 @@ class RolePermission(vdm.sqlalchemy.RevisionedObjectMixin,
                      domain_object.DomainObject):
 
     @classmethod
+    def get(cls, reference):
+        """
+        Returns a RolePermission object referenced by its id.
+        """
+        if not reference:
+            return None
+
+        return meta.Session.query(cls).get(reference)
+
+    @classmethod
     def lookup(cls, role_id, permission_id):
         """
         Returns a RolePermission object by role and permission.

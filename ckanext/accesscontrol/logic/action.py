@@ -472,7 +472,7 @@ def user_role_unassign(context, data_dict):
         raise tk.ObjectNotFound('%s: %s' % (_('Not found'), _('User')))
 
     role = extmodel.Role.get(role_id)
-    if role is not None and role.state == 'active':
+    if role is not None:
         role_id = role.id
     else:
         raise tk.ObjectNotFound('%s: %s' % (_('Not found'), _('Role')))

@@ -97,7 +97,7 @@ class ActionTestBase(FunctionalTestBase):
 
     @nottest
     def test_action(self, action_name, should_error=False, exception_class=tk.ValidationError,
-                    sysadmin=False, check_auth=False, stateful=True, **kwargs):
+                    sysadmin=False, check_auth=False, **kwargs):
         """
         Test an API action.
         :param action_name: action function name, e.g. 'metadata_record_create'
@@ -106,7 +106,6 @@ class ActionTestBase(FunctionalTestBase):
         :param sysadmin: True to execute the action as a sysadmin, False to run it as a normal user
         :param check_auth: True to check whether the user is authorized to perform the action,
             False to ignore the auth check
-        :param stateful: True if the object has state, False if it gets deleted directly
         :param kwargs: additional args to pass to the action function
         :return: tuple(result dict, result obj)
         """
@@ -142,14 +141,10 @@ class ActionTestBase(FunctionalTestBase):
                 assert 'id' in result
                 obj = model_class.get(result['id'])
                 assert type(obj) is model_class
-                if stateful:
-                    assert obj.state == 'active'
+                assert obj.state == 'active'
             elif method == 'delete':
                 obj = model_class.get(kwargs['id'])
-                if stateful:
-                    assert obj.state == 'deleted'
-                else:
-                    assert obj is None
+                assert obj.state == 'deleted'
             elif 'id' in kwargs:
                 obj = model_class.get(kwargs['id'])
 

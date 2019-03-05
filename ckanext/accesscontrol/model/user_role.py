@@ -23,6 +23,16 @@ class UserRole(vdm.sqlalchemy.RevisionedObjectMixin,
                domain_object.DomainObject):
 
     @classmethod
+    def get(cls, reference):
+        """
+        Returns a UserRole object referenced by its id.
+        """
+        if not reference:
+            return None
+
+        return meta.Session.query(cls).get(reference)
+
+    @classmethod
     def lookup(cls, user_id, role_id):
         """
         Returns a UserRole object by user id and role id.
