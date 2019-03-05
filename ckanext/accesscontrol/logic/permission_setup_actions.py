@@ -63,16 +63,21 @@ def permission_define(context, data_dict):
         permission = extmodel.Permission(content_type=data['content_type'], operation=data['operation'])
         session.add(permission)
         session.flush()  # so that we get the new permission id
+    elif permission.state == 'deleted':
+        permission.undelete()
 
     # create permission actions if they don't exist
-    saved_actions = session.query(extmodel.PermissionAction.action_name) \
+    saved_actions = session.query(extmodel.PermissionAction) \
         .filter_by(permission_id=permission.id) \
         .filter(extmodel.PermissionAction.action_name.in_(data['actions'])) \
         .all()
-    saved_actions = [saved_action for (saved_action,) in saved_actions]
-    unsaved_actions = set(data['actions']) - set(saved_actions)
-    for action in unsaved_actions:
-        permission_action = extmodel.PermissionAction(permission_id=permission.id, action_name=action)
+    unsaved_action_names = data['actions']
+    for saved_action in saved_actions:
+        unsaved_action_names.remove(saved_action.action_name)
+        if saved_action.state == 'deleted':
+            saved_action.undelete()
+    for action_name in unsaved_action_names:
+        permission_action = extmodel.PermissionAction(permission_id=permission.id, action_name=action_name)
         session.add(permission_action)
 
     if not defer_commit:
@@ -117,14 +122,14 @@ def permission_undefine(context, data_dict):
 
     # find permission
     permission = session.query(extmodel.Permission) \
-        .filter_by(content_type=data['content_type'], operation=data['operation']) \
+        .filter_by(content_type=data['content_type'], operation=data['operation'], state='active') \
         .first()
     if permission is None:
         raise tk.ObjectNotFound('%s: %s' % (_('Not found'), _('Permission')))
 
     # remove permission actions
     permission_actions = session.query(extmodel.PermissionAction) \
-        .filter_by(permission_id=permission.id) \
+        .filter_by(permission_id=permission.id, state='active') \
         .filter(extmodel.PermissionAction.action_name.in_(data['actions'])) \
         .all()
     for permission_action in permission_actions:
@@ -151,8 +156,10 @@ def permission_cleanup(context, data_dict):
     defer_commit = context.get('defer_commit', False)
 
     unused_permissions = session.query(extmodel.Permission) \
-        .outerjoin(extmodel.PermissionAction) \
-        .filter(extmodel.PermissionAction.id == None) \
+        .filter(~session.query(extmodel.PermissionAction)
+                .filter(extmodel.PermissionAction.permission_id == extmodel.Permission.id)
+                .filter_by(state='active')
+                .exists()) \
         .all()
 
     for permission in unused_permissions:

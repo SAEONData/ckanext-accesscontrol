@@ -1,6 +1,7 @@
 # encoding: utf-8
 
 from sqlalchemy import types, Table, Column, ForeignKey, UniqueConstraint
+import vdm.sqlalchemy
 
 from ckan.model import meta, types as _types, domain_object
 
@@ -13,8 +14,11 @@ permission_action_table = Table(
     UniqueConstraint('permission_id', 'action_name'),
 )
 
+vdm.sqlalchemy.make_table_stateful(permission_action_table)
 
-class PermissionAction(domain_object.DomainObject):
+
+class PermissionAction(vdm.sqlalchemy.StatefulObjectMixin,
+                       domain_object.DomainObject):
     pass
 
 

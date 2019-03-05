@@ -15,11 +15,11 @@ class TestPermissionSetupActions(ActionTestBase):
     @staticmethod
     def _check_permission(**data_dict):
         permission = model.Session.query(extmodel.Permission) \
-            .filter_by(content_type=data_dict['content_type'], operation=data_dict['operation']) \
+            .filter_by(content_type=data_dict['content_type'], operation=data_dict['operation'], state='active') \
             .first()
         assert permission is not None
         permission_actions = model.Session.query(extmodel.PermissionAction.action_name) \
-            .filter_by(permission_id=permission.id) \
+            .filter_by(permission_id=permission.id, state='active') \
             .all()
         actions = [action for (action,) in permission_actions]
         assert set(actions) == set(data_dict['actions'])
@@ -131,11 +131,22 @@ class TestPermissionSetupActions(ActionTestBase):
         self.test_action('permission_cleanup')
         del permission1['actions'][0]
         self._check_permission(**permission1)
-        permission2 = model.Session.query(extmodel.Permission) \
-            .filter_by(content_type=permission2['content_type'], operation=permission2['operation']) \
-            .first()
-        assert permission2 is None
+        permission2 = extmodel.Permission.lookup(permission2['content_type'], permission2['operation'])
+        assert permission2.state == 'deleted'
 
     def test_cleanup_cascade(self):
-        # todo...
-        pass
+        role_permission = ckanext_factories.RolePermission()
+        permission = extmodel.Permission.get(role_permission['permission_id'])
+        actions = model.Session.query(extmodel.PermissionAction.action_name) \
+            .filter_by(permission_id=permission.id) \
+            .all()
+        actions = [action for (action,) in actions]
+        call_action('permission_undefine',
+                    content_type=permission.content_type,
+                    operation=permission.operation,
+                    actions=actions)
+        self.test_action('permission_cleanup')
+        permission = extmodel.Permission.lookup(permission.content_type, permission.operation)
+        assert permission.state == 'deleted'
+        role_permission = extmodel.RolePermission.get(role_permission['id'])
+        assert role_permission.state == 'deleted'
