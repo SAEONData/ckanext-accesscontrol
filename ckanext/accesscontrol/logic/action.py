@@ -52,13 +52,14 @@ def user_privilege_check(context, data_dict):
     if user.sysadmin:
         return True
 
-    has_privilege = session.query(extmodel.UserRole).join(extmodel.Role).join(extmodel.RolePermission) \
-        .join(extmodel.PermissionAction, extmodel.PermissionAction.permission_id == extmodel.RolePermission.permission_id) \
+    has_privilege = session.query(extmodel.UserRole).join(extmodel.Role).join(extmodel.RolePermission).join(extmodel.Permission).join(extmodel.PermissionAction) \
         .filter(extmodel.UserRole.user_id == user_id) \
         .filter(extmodel.UserRole.state == 'active') \
         .filter(extmodel.Role.state == 'active') \
         .filter(extmodel.RolePermission.state == 'active') \
+        .filter(extmodel.Permission.state == 'active') \
         .filter(extmodel.PermissionAction.action_name == action_name) \
+        .filter(extmodel.PermissionAction.state == 'active') \
         .count() > 0
     return has_privilege
 
@@ -300,7 +301,7 @@ def role_permission_grant(context, data_dict):
         raise tk.ObjectNotFound('%s: %s' % (_('Not found'), _('Role')))
 
     permission = extmodel.Permission.get(permission_id)
-    if permission is None:
+    if permission is None or permission.state != 'active':
         raise tk.ObjectNotFound('%s: %s' % (_('Not found'), _('Permission')))
 
     role_permission = extmodel.RolePermission.lookup(role_id, permission_id)
@@ -390,8 +391,11 @@ def role_permission_list(context, data_dict):
     else:
         raise tk.ObjectNotFound('%s: %s' % (_('Not found'), _('Role')))
 
-    permissions = session.query(extmodel.Permission).join(extmodel.RolePermission) \
-        .filter_by(role_id=role_id, state='active') \
+    permissions = session.query(extmodel.Permission) \
+        .join(extmodel.RolePermission) \
+        .filter(extmodel.RolePermission.role_id == role_id) \
+        .filter(extmodel.RolePermission.state == 'active') \
+        .filter(extmodel.Permission.state == 'active') \
         .all()
     return dictization.permission_list_dictize(permissions, context)
 
@@ -603,5 +607,7 @@ def permission_list(context, data_dict):
     session = context['session']
     context['include_actions'] = asbool(data_dict.get('include_actions'))
 
-    permissions = session.query(extmodel.Permission).all()
+    permissions = session.query(extmodel.Permission) \
+        .filter_by(state='active') \
+        .all()
     return dictization.permission_list_dictize(permissions, context)

@@ -41,7 +41,7 @@ def permission_dictize(permission, context):
 
     if context.get('include_actions'):
         action_names = session.query(extmodel.PermissionAction.action_name) \
-            .filter_by(permission_id=permission.id) \
+            .filter_by(permission_id=permission.id, state='active') \
             .all()
         permission_dict['actions'] = [action for (action,) in action_names]
 

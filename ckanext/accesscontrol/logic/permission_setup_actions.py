@@ -71,7 +71,7 @@ def permission_define(context, data_dict):
         .filter_by(permission_id=permission.id) \
         .filter(extmodel.PermissionAction.action_name.in_(data['actions'])) \
         .all()
-    unsaved_action_names = data['actions']
+    unsaved_action_names = list(data['actions'])  # copy list so as not to alter caller's view of it
     for saved_action in saved_actions:
         unsaved_action_names.remove(saved_action.action_name)
         if saved_action.state == 'deleted':
