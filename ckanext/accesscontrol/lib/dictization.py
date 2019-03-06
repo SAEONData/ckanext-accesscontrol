@@ -34,6 +34,11 @@ def user_role_dict_save(user_role_dict, context):
     return d.table_dict_save(user_role_dict, extmodel.UserRole, context)
 
 
+def user_role_dictize(user_role, context):
+    user_role_dict = d.table_dictize(user_role, context)
+    return user_role_dict
+
+
 def permission_dictize(permission, context):
     session = context['session']
     permission_dict = d.table_dictize(permission, context)

@@ -1,5 +1,7 @@
 # encoding: utf-8
 
+import ckan.plugins.toolkit as tk
+from ckan.tests.helpers import call_action
 from ckanext.accesscontrol import model as extmodel
 from ckanext.accesscontrol.tests import (
     ActionTestBase,
@@ -111,3 +113,41 @@ class TestRoleActions(ActionTestBase):
                                      role_id=role['name'],
                                      permission_id=permission['id'])
         assert_error(result, 'message', 'The role does not have the specified permission')
+
+    def test_user_role_assign_valid(self):
+        role = ckanext_factories.Role()
+        self.test_action('user_role_assign',
+                         user_id=self.normal_user['name'],
+                         role_id=role['name'])
+        user_role = extmodel.UserRole.lookup(self.normal_user['id'], role['id'])
+        assert user_role and user_role.state == 'active'
+
+    def test_user_role_assign_invalid_deleted_role(self):
+        role = ckanext_factories.Role()
+        call_action('role_delete', id=role['id'])
+        result, _ = self.test_action('user_role_assign', should_error=True, exception_class=tk.ObjectNotFound,
+                                     user_id=self.normal_user['name'],
+                                     role_id=role['name'])
+        assert_error(result, '', 'Not found: Role')
+
+    def test_user_role_assign_invalid_already_assigned(self):
+        user_role = ckanext_factories.UserRole()
+        result, _ = self.test_action('user_role_assign', should_error=True,
+                                     user_id=user_role['user_id'],
+                                     role_id=user_role['role_id'])
+        assert_error(result, 'message', 'The role has already been assigned to the user')
+
+    def test_user_role_unassign_valid(self):
+        user_role = ckanext_factories.UserRole()
+        self.test_action('user_role_unassign',
+                         user_id=user_role['user_id'],
+                         role_id=user_role['role_id'])
+        user_role = extmodel.UserRole.lookup(user_role['user_id'], user_role['role_id'])
+        assert user_role.state == 'deleted'
+
+    def test_user_role_unassign_invalid_not_assigned(self):
+        role = ckanext_factories.Role()
+        result, _ = self.test_action('user_role_unassign', should_error=True,
+                                     user_id=self.normal_user['id'],
+                                     role_id=role['id'])
+        assert_error(result, 'message', 'The user does not have the specified role')

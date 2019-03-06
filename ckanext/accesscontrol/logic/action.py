@@ -285,6 +285,9 @@ def role_permission_grant(context, data_dict):
     :type role_id: string
     :param permission_id: the id of the permission
     :type permission_id: string
+
+    :returns: the newly created role permission
+    :rtype: dictionary
     """
     log.info("Granting permission to role: %r", data_dict)
     tk.check_access('role_permission_grant', context, data_dict)
@@ -410,6 +413,9 @@ def user_role_assign(context, data_dict):
     :type user_id: string
     :param role_id: the id or name of the role
     :type role_id: string
+
+    :returns: the newly created user role
+    :rtype: dictionary
     """
     log.info("Assigning role to user: %r", data_dict)
     tk.check_access('user_role_assign', context, data_dict)
@@ -437,7 +443,7 @@ def user_role_assign(context, data_dict):
 
     data_dict['user_id'] = user_id
     data_dict['role_id'] = role_id
-    dictization.user_role_dict_save(data_dict, context)
+    user_role = dictization.user_role_dict_save(data_dict, context)
 
     rev = model.repo.new_revision()
     rev.author = author
@@ -448,6 +454,8 @@ def user_role_assign(context, data_dict):
 
     if not defer_commit:
         model.repo.commit()
+
+    return dictization.user_role_dictize(user_role, context)
 
 
 def user_role_unassign(context, data_dict):
