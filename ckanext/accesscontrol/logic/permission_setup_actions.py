@@ -144,7 +144,7 @@ def permission_undefine(context, data_dict):
 
 def permission_cleanup(context, data_dict):
     """
-    Delete (purge) permission objects that have no associated actions, and delete any
+    Delete permission objects that have no associated actions, as well as any
     dependent role permissions.
     """
     log.info("Cleaning up unused permissions", data_dict)
