@@ -45,10 +45,11 @@ class RolesPlugin(p.SingletonPlugin):
         check_context['ignore_auth'] = True
         check_data_dict = {
             'user_id': context['user'],
-            'action_name': action_name,
+            'action': action_name,
         }
-        if not action.user_privilege_check(check_context, check_data_dict):
-            raise tk.NotAuthorized(_('User has insufficient privileges to perform this operation'))
+        privilege_check = action.user_privilege_check(check_context, check_data_dict)
+        if not privilege_check['success']:
+            raise tk.NotAuthorized(privilege_check['msg'])
 
         return self.core_check_access(action_name, context, data_dict)
 

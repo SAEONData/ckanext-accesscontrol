@@ -23,10 +23,10 @@ def user_privilege_check(context, data_dict):
 
     :param user_id: the id or name of the user
     :type user_id: string
-    :param action_name: the name of the action API function
-    :type action_name: string
+    :param action: the name of the action API function
+    :type action: string
 
-    :returns: boolean
+    :returns: dict{'success': T/F, 'msg': str}
     """
     log.debug("Checking user privilege: %r", data_dict)
     tk.check_access('user_privilege_check', context, data_dict)
@@ -34,23 +34,32 @@ def user_privilege_check(context, data_dict):
     model = context['model']
     session = context['session']
 
-    user_id, action_name = tk.get_or_bust(data_dict, ['user_id', 'action_name'])
+    user_id, action = tk.get_or_bust(data_dict, ['user_id', 'action'])
     try:
-        tk.get_action(action_name)
+        tk.get_action(action)
     except:
-        raise tk.ValidationError({'action_name': [_('The action %s does not exist') % action_name]})
+        raise tk.ValidationError({'action': [_('The action %s does not exist') % action]})
 
-    if is_permission_action_automatic(action_name):
-        return True
+    if is_permission_action_automatic(action):
+        return {
+            'success': True,
+            'msg': _('The action %s is allowed by default') % action
+        }
 
     user = model.User.get(user_id)
     if user is not None and user.state == 'active':
         user_id = user.id
     else:
-        return False
+        return {
+            'success': False,
+            'msg': _('Unknown user')
+        }
 
     if user.sysadmin:
-        return True
+        return {
+            'success': True,
+            'msg': _('User is a sysadmin')
+        }
 
     has_privilege = session.query(extmodel.UserRole).join(extmodel.Role).join(extmodel.RolePermission).join(extmodel.Permission).join(extmodel.PermissionAction) \
         .filter(extmodel.UserRole.user_id == user_id) \
@@ -58,10 +67,13 @@ def user_privilege_check(context, data_dict):
         .filter(extmodel.Role.state == 'active') \
         .filter(extmodel.RolePermission.state == 'active') \
         .filter(extmodel.Permission.state == 'active') \
-        .filter(extmodel.PermissionAction.action_name == action_name) \
+        .filter(extmodel.PermissionAction.action_name == action) \
         .filter(extmodel.PermissionAction.state == 'active') \
         .count() > 0
-    return has_privilege
+    return {
+        'success': has_privilege,
+        'msg': _('User is permitted to perform the action') if has_privilege else _('User is not permitted to perform the action')
+    }
 
 
 def role_create(context, data_dict):
