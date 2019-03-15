@@ -8,7 +8,7 @@ import traceback
 from nose.tools import nottest
 
 from ckan.tests import factories as ckan_factories
-from ckan.tests.helpers import FunctionalTestBase, call_action
+from ckan.tests.helpers import FunctionalTestBase, call_action, reset_db
 import ckan.plugins.toolkit as tk
 import ckan.model as ckan_model
 from ckanext.accesscontrol.model import setup_roles
@@ -86,6 +86,14 @@ class ActionTestBase(FunctionalTestBase):
         print "\n===", cls.__name__, "==="
         super(ActionTestBase, cls).setup_class()
         setup_roles.init_tables()
+
+    @classmethod
+    def teardown_class(cls):
+        super(ActionTestBase, cls).teardown_class()
+        # we just want to ensure that after the very last class teardown, we don't leave
+        # anything in the DB that might cause FK violations when initializing the first
+        # set of tests in another extension
+        reset_db()
 
     def setup(self):
         super(ActionTestBase, self).setup()
