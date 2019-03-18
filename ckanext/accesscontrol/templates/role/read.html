@@ -1,14 +1,20 @@
 {% extends "role/read_base.html" %}
 
 {% block primary_content_inner %}
-  <h3 class="page-heading">{{ _('{0} permitted action(s)'.format(c.actions|length)) }}</h3>
-  <table class="table table-header table-hover table-bordered" id="role-action-table">
+  <h3 class="page-heading">{{ _('{0} granted permission(s)'.format(c.permissions|length)) }}</h3>
+  <table class="table table-header table-hover table-bordered" id="role-permission-table">
     <thead>
-      <tr><th>{{ _('Action Name') }}</th></tr>
+      <tr>
+        <th>{{ _('Content Type') }}</th>
+        <th>{{ _('Operation') }}</th>
+      </tr>
     </thead>
     <tbody>
-      {% for action in c.actions %}
-      <tr><td>{{ action }}</td></tr>
+      {% for permission in c.permissions %}
+        <tr>
+          <td>{{ permission.content_type }}</td>
+          <td>{{ permission.operation }}</td>
+        </tr>
       {% endfor %}
     </tbody>
   </table>

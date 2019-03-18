@@ -324,6 +324,7 @@ def role_permission_grant(context, data_dict):
         raise tk.ValidationError(_('The specified permission has already been granted to the role'))
 
     data_dict['role_id'] = role_id
+    data_dict['state'] = 'active'
     role_permission = dictization.role_permission_dict_save(data_dict, context)
 
     rev = model.repo.new_revision()
