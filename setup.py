@@ -2,7 +2,7 @@
 
 from setuptools import setup, find_packages
 
-version = '0.3.1'
+version = '0.4'
 
 setup(
     name='ckanext-accesscontrol',
@@ -13,7 +13,7 @@ setup(
     author_email='mark@saeon.ac.za',
     license='MIT',
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 2.7',
     ],
