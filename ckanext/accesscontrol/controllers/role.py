@@ -125,6 +125,7 @@ class RoleController(tk.BaseController):
         context = {'model': model, 'session': model.Session, 'user': tk.c.user}
         tk.c.role = tk.get_action('role_show')(context, {'id': id})
         tk.c.permissions = tk.get_action('role_permission_list')(context, {'role_id': id})
+        tk.c.permissions.sort(key=lambda item: (item['content_type'], item['operation']))
         return tk.render('role/read.html')
 
     def about(self, id):
@@ -206,7 +207,7 @@ class RoleController(tk.BaseController):
                 'operation': available_permission['operation'],
                 'granted': available_permission in granted_permissions,
             }]
-        permission_list.sort()
+        permission_list.sort(key=lambda item: (item['content_type'], item['operation']))
         return permission_list
 
     def _save_new(self, context):
