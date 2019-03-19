@@ -1,25 +1,15 @@
 # encoding: utf-8
 
-from ckan.logic import _actions
-
-_actions_with_automatic_permission = (
+_default_allow_actions = (
     'site_read',
     'user_create',
+    'sysadmin',  # pseudo-action that CKAN calls check_access for
 )
 
 
-def is_permission_action_automatic(action_name):
+def is_action_allowed_by_default(action_name):
     """
     Indicates whether the given action does not require an explicit role permission.
     :returns: boolean
     """
-    return action_name in _actions_with_automatic_permission
-
-
-def available_actions():
-    """
-    Get a list of actions that may be granted to a role.
-    :returns: list of strings
-    """
-    actions = set(_actions.keys()) - set(_actions_with_automatic_permission)
-    return list(actions)
+    return action_name in _default_allow_actions

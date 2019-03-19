@@ -2,7 +2,6 @@
 
 import ckan.plugins as p
 import ckan.logic
-from ckan.common import _
 import ckan.plugins.toolkit as tk
 from ckanext.accesscontrol.logic import action, auth, permission_setup_actions
 from ckanext.accesscontrol.config import config as accesscontrol_config

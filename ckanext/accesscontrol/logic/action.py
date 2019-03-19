@@ -8,7 +8,7 @@ from ckan.common import _
 from ckanext.accesscontrol.logic import schema
 from ckanext.accesscontrol.lib import dictization
 import ckanext.accesscontrol.model as extmodel
-from ckanext.accesscontrol.logic import is_permission_action_automatic
+from ckanext.accesscontrol.logic import is_action_allowed_by_default
 
 log = logging.getLogger(__name__)
 
@@ -35,16 +35,17 @@ def user_privilege_check(context, data_dict):
     session = context['session']
 
     user_id, action = tk.get_or_bust(data_dict, ['user_id', 'action'])
-    try:
-        tk.get_action(action)
-    except:
-        raise tk.ValidationError({'action': [_('The action %s does not exist') % action]})
 
-    if is_permission_action_automatic(action):
+    if is_action_allowed_by_default(action):
         return {
             'success': True,
             'msg': _('The action %s is allowed by default') % action
         }
+
+    try:
+        tk.get_action(action)
+    except:
+        raise tk.ValidationError({'action': [_('The action %s does not exist') % action]})
 
     user = model.User.get(user_id)
     if user is not None and user.state == 'active':

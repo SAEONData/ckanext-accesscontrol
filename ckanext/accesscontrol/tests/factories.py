@@ -5,7 +5,7 @@ import factory
 from ckanext.accesscontrol import model as extmodel
 from ckan.tests import helpers, factories as ckan_factories
 from ckan.logic import _actions as all_actions
-from ckanext.accesscontrol.logic import _actions_with_automatic_permission
+from ckanext.accesscontrol.logic import _default_allow_actions
 
 
 class Role(factory.Factory):
@@ -32,7 +32,7 @@ class Role(factory.Factory):
 class Permission(factory.Factory):
     FACTORY_FOR = extmodel.Permission
 
-    _actions = list(set(all_actions.keys()) - set(_actions_with_automatic_permission))
+    _actions = list(set(all_actions.keys()) - set(_default_allow_actions))
 
     content_type = factory.Sequence(lambda n: 'a_thing_{0:02d}'.format(n))
     operation = 'an_operation'

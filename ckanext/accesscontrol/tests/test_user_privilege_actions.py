@@ -4,7 +4,7 @@ from ckan import model
 from ckan.tests.helpers import call_action
 from ckan.tests import factories as ckan_factories
 from ckanext.accesscontrol import model as extmodel
-from ckanext.accesscontrol.logic import _actions_with_automatic_permission
+from ckanext.accesscontrol.logic import _default_allow_actions
 from ckanext.accesscontrol.tests import (
     ActionTestBase,
     assert_error,
@@ -128,7 +128,7 @@ class TestUserPrivilegeActions(ActionTestBase):
         assert_error(result, 'msg', 'User is a sysadmin')
 
     def test_automatic_privilege(self):
-        for action in _actions_with_automatic_permission:
+        for action in _default_allow_actions:
             result, _ = self.test_action('user_privilege_check',
                                          action=action,
                                          user_id='')
