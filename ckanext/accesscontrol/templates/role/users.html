@@ -1,0 +1,44 @@
+{% extends "role/edit_base.html" %}
+
+{% block page_primary_action %}
+  <form method="POST" data-module="basic-form">
+    {% if h.check_access('user_role_assign', {'id': c.role.id}) %}
+      <select name="user_id">
+        {% for user in c.users %}
+          {% if not user.assigned %}
+            <option value="{{ user.name }}">{{ user.name }}</option>
+          {% endif %}
+        {% endfor %}
+      </select>
+      <button class="btn btn-primary" name="save" type="submit">
+        <i class="fa fa-user"></i> {{ _('Assign Role') }}
+      </button>
+    {% endif %}
+  </form>
+{% endblock %}
+
+{% block primary_content_inner %}
+  {% set assigned_users = c.users|selectattr("assigned")|list %}
+  <h3 class="page-heading">{{ _('{0} assigned user(s)'.format(assigned_users|length)) }}</h3>
+  <table class="table table-header table-hover table-bordered" id="role-user-table">
+    <thead>
+      <tr>
+        <th>{{ _('User Name') }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in assigned_users %}
+        <tr>
+          <td>{{ user.name }}
+            <div class="btn-group pull-right">
+              <a class="btn btn-danger btn-small" href="{% url_for controller='ckanext.accesscontrol.controllers.role:RoleController',
+                                                           action='user_unassign', id=c.role.id, user_id=user.name %}"
+                 data-module="confirm-action" data-module-content="{{ _('Are you sure you want to unassign the role from this user?') }}"
+                 title="{{ _('Unassign role from user') }}"><i class="fa fa-times"></i></a>
+            </div>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

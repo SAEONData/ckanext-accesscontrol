@@ -33,6 +33,8 @@ class RolesPlugin(p.SingletonPlugin):
             m.connect('role_about', '/role/about/{id}', action='about', ckan_icon='info-circle')
             m.connect('role_activity', '/role/activity/{id}', action='activity', ckan_icon='clock-o')
             m.connect('role_permissions', '/role/permissions/{id}', action='permissions', ckan_icon='shield')
+            m.connect('role_users', '/role/users/{id}', action='users', ckan_icon='users')
+            m.connect('/role/users/{id}/unassign/{user_id}', action='user_unassign')
 
         return map
 

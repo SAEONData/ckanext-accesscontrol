@@ -456,6 +456,7 @@ def user_role_assign(context, data_dict):
 
     data_dict['user_id'] = user_id
     data_dict['role_id'] = role_id
+    data_dict['state'] = 'active'
     user_role = dictization.user_role_dict_save(data_dict, context)
 
     rev = model.repo.new_revision()
