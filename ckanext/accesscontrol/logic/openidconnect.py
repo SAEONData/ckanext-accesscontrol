@@ -50,7 +50,8 @@ def identify():
         user_id = environ.get('repoze.who.identity', {}).get('repoze.who.userid')
 
     if user_id:
-        user_dict = _persist_user(user_id, user_data)
+        user_dict = _persist_userinfo(user_id, user_data)
+        _persist_roleinfo(user_id, user_data)
         tk.c.user = user_dict['name']
 
 
@@ -87,7 +88,8 @@ def callback():
         _validate_token(token)
         user_id, user_data = _request_userinfo(token)
         _save_token(user_id, token)
-        _persist_user(user_id, user_data)
+        _persist_userinfo(user_id, user_data)
+        _persist_roleinfo(user_id, user_data)
         _remember_login(user_id)
 
     except anyAuthException, e:
@@ -202,7 +204,7 @@ def _request_userinfo(token):
     return user_id, user_data
 
 
-def _persist_user(user_id, user_data):
+def _persist_userinfo(user_id, user_data):
     """
     Create or update a user in the CKAN database, to correspond with the OpenID user info
     obtained from the authorization server. If user_data is not provided, simply return
@@ -254,6 +256,46 @@ def _persist_user(user_id, user_data):
         log.info("Created user record for OpenID user %s (%s)", user_id, user_dict['name'])
 
     return user_dict
+
+
+def _persist_roleinfo(user_id, user_data):
+    """
+    Synchronize user-role assignments with the role info obtained from the authorization
+    server. Roles are created on the fly as needed, but existing deleted roles are left
+    as is.
+    """
+    if not user_data:
+        return
+
+    try:
+        role_show = tk.get_action('role_show')
+        role_create = tk.get_action('role_create')
+        user_role_list = tk.get_action('user_role_list')
+        user_role_assign = tk.get_action('user_role_assign')
+        user_role_unassign = tk.get_action('user_role_unassign')
+    except:
+        return  # roles plugin is not enabled
+
+    context = {'ignore_auth': True}
+    roles = [role.lower()
+             for role in user_data.get(config.rolename_field, [])
+             if not config.is_sysadmin_role(role)]
+
+    assigned_roles = user_role_list(context, {'user_id': user_id})
+    roles_to_assign = set(roles) - set(assigned_roles)
+    roles_to_unassign = set(assigned_roles) - set(roles)
+
+    for role_name in roles_to_assign:
+        try:
+            role_dict = role_show(context, {'id': role_name})
+        except tk.ObjectNotFound:
+            role_dict = role_create(context, {'name': role_name, 'title': role_name.title()})
+
+        if role_dict['state'] == 'active':
+            user_role_assign(context, {'user_id': user_id, 'role_id': role_name})
+
+    for role_name in roles_to_unassign:
+        user_role_unassign(context, {'user_id': user_id, 'role_id': role_name})
 
 
 def _remember_login(user_id):
