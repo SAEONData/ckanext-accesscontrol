@@ -42,15 +42,17 @@ class RolesPlugin(p.SingletonPlugin):
         Check whether the user has the privilege to perform the named action,
         before calling the core check_access function.
         """
-        check_context = context.copy()
-        check_context['ignore_auth'] = True
-        check_data_dict = {
-            'user_id': context['user'],
-            'action': action_name,
-        }
-        privilege_check = action.user_privilege_check(check_context, check_data_dict)
-        if not privilege_check['success']:
-            raise tk.NotAuthorized(privilege_check['msg'])
+        check_auth = not context.get('ignore_auth', False)
+        if check_auth:
+            check_context = context.copy()
+            check_context.setdefault('session', check_context['model'].Session)  # because ckan.lib.helpers.check_access does not add the session to the context *smh*
+            check_data_dict = {
+                'user_id': context['user'],
+                'action': action_name,
+            }
+            privilege_check = action.user_privilege_check(check_context, check_data_dict)
+            if not privilege_check['success']:
+                raise tk.NotAuthorized(privilege_check['msg'])
 
         return self.core_check_access(action_name, context, data_dict)
 
@@ -60,14 +62,14 @@ class RolesPlugin(p.SingletonPlugin):
         """
         if self.core_check_access is None:
             self.core_check_access = ckan.logic.check_access
-            ckan.logic.check_access = self.check_access
+            tk.check_access = ckan.logic.check_access = self.check_access
 
     def after_unload(self, service):
         """
         Un-chain our check_access method from CKAN's when the plugin is unloaded.
         """
         if self.core_check_access is not None:
-            ckan.logic.check_access = self.core_check_access
+            tk.check_access = ckan.logic.check_access = self.core_check_access
             self.core_check_access = None
 
     def get_actions(self):

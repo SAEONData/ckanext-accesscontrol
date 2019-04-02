@@ -19,8 +19,6 @@ def user_privilege_check(context, data_dict):
     Check whether a user has the privilege (via user roles and role permissions)
     to perform an action.
 
-    You must be a sysadmin to check user privileges.
-
     :param user_id: the id or name of the user
     :type user_id: string
     :param action: the name of the action API function
@@ -29,7 +27,6 @@ def user_privilege_check(context, data_dict):
     :returns: dict{'success': T/F, 'msg': str}
     """
     log.debug("Checking user privilege: %r", data_dict)
-    tk.check_access('user_privilege_check', context, data_dict)
 
     model = context['model']
     session = context['session']
