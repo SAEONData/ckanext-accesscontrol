@@ -4,6 +4,12 @@ _default_allow_actions = (
     'site_read',
     'user_create',
     'sysadmin',  # pseudo-action that CKAN calls check_access for
+    'dashboard_new_activities_count',
+    'dashboard_activity_list',
+    'package_search',
+    'organization_list_for_user',
+    'organization_list',
+    'group_list',
 )
 
 
