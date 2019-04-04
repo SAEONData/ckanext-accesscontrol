@@ -62,14 +62,30 @@ class RolesPlugin(p.SingletonPlugin):
         """
         if self.core_check_access is None:
             self.core_check_access = ckan.logic.check_access
-            tk.check_access = ckan.logic.check_access = self.check_access
+            # Hack alert!
+            # this is the only way to ensure that all core check_access calls come to self.check_access
+            tk.check_access = \
+                ckan.logic.check_access = \
+                ckan.logic.action.get._check_access = \
+                ckan.logic.action.create._check_access = \
+                ckan.logic.action.update._check_access = \
+                ckan.logic.action.delete._check_access = \
+                self.check_access
 
     def after_unload(self, service):
         """
         Un-chain our check_access method from CKAN's when the plugin is unloaded.
         """
         if self.core_check_access is not None:
-            tk.check_access = ckan.logic.check_access = self.core_check_access
+            # Hack alert!
+            # revert all core check_access references
+            tk.check_access = \
+                ckan.logic.check_access = \
+                ckan.logic.action.get._check_access = \
+                ckan.logic.action.create._check_access = \
+                ckan.logic.action.update._check_access = \
+                ckan.logic.action.delete._check_access = \
+                self.core_check_access
             self.core_check_access = None
 
     def get_actions(self):
