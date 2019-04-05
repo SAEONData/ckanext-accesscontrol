@@ -2,6 +2,7 @@
 
 import logging
 from paste.deploy.converters import asbool
+from sqlalchemy import and_
 
 import ckan.plugins.toolkit as tk
 from ckan.common import _
@@ -62,7 +63,10 @@ def user_privilege_check(context, data_dict):
             }
             return result
 
-        has_privilege = session.query(extmodel.UserRole).join(extmodel.Role).join(extmodel.RolePermission).join(extmodel.Permission).join(extmodel.PermissionAction) \
+        has_privilege = session.query(extmodel.UserRole).join(extmodel.Role).join(extmodel.RolePermission) \
+            .join(extmodel.Permission, and_(extmodel.Permission.content_type == extmodel.RolePermission.content_type,
+                                            extmodel.Permission.operation == extmodel.RolePermission.operation)) \
+            .join(extmodel.PermissionAction) \
             .filter(extmodel.UserRole.user_id == user_id) \
             .filter(extmodel.UserRole.state == 'active') \
             .filter(extmodel.Role.state == 'active') \
@@ -305,8 +309,10 @@ def role_permission_grant(context, data_dict):
 
     :param role_id: the id or name of the role
     :type role_id: string
-    :param permission_id: the id of the permission
-    :type permission_id: string
+    :param content_type: the content type that the permission relates to
+    :type content_type: string
+    :param operation: the operation to allow the role to perform on the content type
+    :type operation: string
 
     :returns: the newly created role permission
     :rtype: dictionary
@@ -318,18 +324,18 @@ def role_permission_grant(context, data_dict):
     user = context['user']
     defer_commit = context.get('defer_commit', False)
 
-    role_id, permission_id = tk.get_or_bust(data_dict, ['role_id', 'permission_id'])
+    role_id, content_type, operation = tk.get_or_bust(data_dict, ['role_id', 'content_type', 'operation'])
     role = extmodel.Role.get(role_id)
     if role is not None and role.state == 'active':
         role_id = role.id
     else:
         raise tk.ObjectNotFound('%s: %s' % (_('Not found'), _('Role')))
 
-    permission = extmodel.Permission.get(permission_id)
+    permission = extmodel.Permission.lookup(content_type, operation)
     if permission is None or permission.state != 'active':
         raise tk.ObjectNotFound('%s: %s' % (_('Not found'), _('Permission')))
 
-    role_permission = extmodel.RolePermission.lookup(role_id, permission_id)
+    role_permission = extmodel.RolePermission.lookup(role_id, content_type, operation)
     if role_permission and role_permission.state == 'active':
         raise tk.ValidationError(_('The specified permission has already been granted to the role'))
 
@@ -342,7 +348,7 @@ def role_permission_grant(context, data_dict):
     if 'message' in context:
         rev.message = context['message']
     else:
-        rev.message = _(u'REST API: Grant permission to role %s: %s on %s') % (role.name, permission.operation, permission.content_type)
+        rev.message = _(u'REST API: Grant permission to role %s: %s %s') % (role.name, permission.operation, permission.content_type)
 
     if not defer_commit:
         model.repo.commit()
@@ -358,8 +364,10 @@ def role_permission_revoke(context, data_dict):
 
     :param role_id: the id or name of the role
     :type role_id: string
-    :param permission_id: the id of the permission
-    :type permission_id: string
+    :param content_type: the content type that the permission relates to
+    :type content_type: string
+    :param operation: the operation to deny the role to perform on the content type
+    :type operation: string
     """
     log.info("Revoking permission from role: %r", data_dict)
     tk.check_access('role_permission_revoke', context, data_dict)
@@ -368,18 +376,18 @@ def role_permission_revoke(context, data_dict):
     user = context['user']
     defer_commit = context.get('defer_commit', False)
 
-    role_id, permission_id = tk.get_or_bust(data_dict, ['role_id', 'permission_id'])
+    role_id, content_type, operation = tk.get_or_bust(data_dict, ['role_id', 'content_type', 'operation'])
     role = extmodel.Role.get(role_id)
     if role is not None and role.state == 'active':
         role_id = role.id
     else:
         raise tk.ObjectNotFound('%s: %s' % (_('Not found'), _('Role')))
 
-    permission = extmodel.Permission.get(permission_id)
+    permission = extmodel.Permission.lookup(content_type, operation)
     if permission is None:
         raise tk.ObjectNotFound('%s: %s' % (_('Not found'), _('Permission')))
 
-    role_permission = extmodel.RolePermission.lookup(role_id, permission_id)
+    role_permission = extmodel.RolePermission.lookup(role_id, content_type, operation)
     if not role_permission or role_permission.state != 'active':
         raise tk.ValidationError(_('The role does not have the specified permission'))
 
@@ -387,7 +395,7 @@ def role_permission_revoke(context, data_dict):
 
     rev = model.repo.new_revision()
     rev.author = user
-    rev.message = _(u'REST API: Revoke permission from role %s: %s on %s') % (role.name, permission.operation, permission.content_type)
+    rev.message = _(u'REST API: Revoke permission from role %s: %s %s') % (role.name, permission.operation, permission.content_type)
 
     if not defer_commit:
         model.repo.commit()
@@ -418,7 +426,8 @@ def role_permission_list(context, data_dict):
         raise tk.ObjectNotFound('%s: %s' % (_('Not found'), _('Role')))
 
     permissions = session.query(extmodel.Permission) \
-        .join(extmodel.RolePermission) \
+        .join(extmodel.RolePermission, and_(extmodel.Permission.content_type == extmodel.RolePermission.content_type,
+                                            extmodel.Permission.operation == extmodel.RolePermission.operation)) \
         .filter(extmodel.RolePermission.role_id == role_id) \
         .filter(extmodel.RolePermission.state == 'active') \
         .filter(extmodel.Permission.state == 'active') \

@@ -69,8 +69,9 @@ class TestPermissionSetupActions(ActionTestBase):
                                      operation=permission['operation'],
                                      actions=permission['actions'])
         assert result['actions'] == []
-        call_action('permission_cleanup')
         perm = extmodel.Permission.get(permission['id'])
+        perm.delete()
+        model.repo.commit()
         assert perm.state == 'deleted'
         result, _ = self.test_action('permission_define',
                                      content_type=permission['content_type'],

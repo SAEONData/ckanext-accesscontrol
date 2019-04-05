@@ -66,11 +66,17 @@ class RolePermission(factory.Factory):
 
         context = {'user': ckan_factories._get_action_user_name(kwargs)}
         role_id = kwargs.pop('role_id', None) or Role()['id']
-        permission_id = kwargs.pop('permission_id', None) or Permission()['id']
+        content_type = kwargs.pop('content_type', None)
+        operation = kwargs.pop('operation', None)
+        if not content_type and not operation:
+            permission = Permission()
+            content_type = permission['content_type']
+            operation = permission['operation']
 
         return helpers.call_action('role_permission_grant', context=context,
                                    role_id=role_id,
-                                   permission_id=permission_id,
+                                   content_type=content_type,
+                                   operation=operation,
                                    **kwargs)
 
 

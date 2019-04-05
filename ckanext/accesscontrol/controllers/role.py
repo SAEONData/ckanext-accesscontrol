@@ -257,11 +257,11 @@ class RoleController(tk.BaseController):
                                        if permission_id.startswith('permission:')]
             current_permissions = tk.c.permissions
             for permission in current_permissions:
+                data_dict['content_type'] = permission['content_type']
+                data_dict['operation'] = permission['operation']
                 if permission['id'] in selected_permission_ids and not permission['granted']:
-                    data_dict['permission_id'] = permission['id']
                     tk.get_action('role_permission_grant')(context, data_dict)
                 elif permission['granted'] and permission['id'] not in selected_permission_ids:
-                    data_dict['permission_id'] = permission['id']
                     tk.get_action('role_permission_revoke')(context, data_dict)
 
             model.repo.commit()

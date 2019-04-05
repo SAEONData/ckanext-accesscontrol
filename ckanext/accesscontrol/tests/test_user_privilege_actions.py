@@ -19,7 +19,9 @@ class TestUserPrivilegeActions(ActionTestBase):
         self.role = ckanext_factories.Role()
         self.user_role = ckanext_factories.UserRole(role_id=self.role['id'], user_id=self.user['id'])
         self.permission = ckanext_factories.Permission()
-        self.role_permission = ckanext_factories.RolePermission(role_id=self.role['id'], permission_id=self.permission['id'])
+        self.role_permission = ckanext_factories.RolePermission(role_id=self.role['id'],
+                                                                content_type=self.permission['content_type'],
+                                                                operation=self.permission['operation'])
 
     def test_valid(self):
         self._prepare_user_privilege()
@@ -40,7 +42,10 @@ class TestUserPrivilegeActions(ActionTestBase):
 
     def test_revoked_permission(self):
         self._prepare_user_privilege()
-        call_action('role_permission_revoke', role_id=self.role['id'], permission_id=self.permission['id'])
+        call_action('role_permission_revoke',
+                    role_id=self.role['id'],
+                    content_type=self.permission['content_type'],
+                    operation=self.permission['operation'])
         result, _ = self.test_action('user_privilege_check',
                                      action=self.permission['actions'][0],
                                      user_id=self.user['name'])

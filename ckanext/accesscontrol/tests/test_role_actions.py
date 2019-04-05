@@ -86,15 +86,17 @@ class TestRoleActions(ActionTestBase):
         permission = ckanext_factories.Permission()
         self.test_action('role_permission_grant',
                          role_id=role['name'],
-                         permission_id=permission['id'])
-        role_permission = extmodel.RolePermission.lookup(role['id'], permission['id'])
+                         content_type=permission['content_type'],
+                         operation=permission['operation'])
+        role_permission = extmodel.RolePermission.lookup(role['id'], permission['content_type'], permission['operation'])
         assert role_permission and role_permission.state == 'active'
 
     def test_permission_grant_invalid_already_granted(self):
         role_permission = ckanext_factories.RolePermission()
         result, _ = self.test_action('role_permission_grant', should_error=True,
                                      role_id=role_permission['role_id'],
-                                     permission_id=role_permission['permission_id'])
+                                     content_type=role_permission['content_type'],
+                                     operation=role_permission['operation'])
         assert_error(result, 'message', 'The specified permission has already been granted to the role')
 
     def test_permission_revoke_valid(self):
@@ -102,8 +104,9 @@ class TestRoleActions(ActionTestBase):
         role = extmodel.Role.get(role_permission['role_id'])
         self.test_action('role_permission_revoke',
                          role_id=role.name,
-                         permission_id=role_permission['permission_id'])
-        role_permission = extmodel.RolePermission.lookup(role.id, role_permission['permission_id'])
+                         content_type=role_permission['content_type'],
+                         operation=role_permission['operation'])
+        role_permission = extmodel.RolePermission.lookup(role.id, role_permission['content_type'], role_permission['operation'])
         assert role_permission.state == 'deleted'
 
     def test_permission_revoke_invalid_not_granted(self):
@@ -111,7 +114,8 @@ class TestRoleActions(ActionTestBase):
         permission = ckanext_factories.Permission()
         result, _ = self.test_action('role_permission_revoke',
                                      role_id=role['name'],
-                                     permission_id=permission['id'])
+                                     content_type=permission['content_type'],
+                                     operation=permission['operation'])
         assert_error(result, 'message', 'The role does not have the specified permission')
 
     def test_user_role_assign_valid(self):
