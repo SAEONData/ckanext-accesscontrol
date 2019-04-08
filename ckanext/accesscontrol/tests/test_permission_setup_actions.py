@@ -15,11 +15,11 @@ class TestPermissionSetupActions(ActionTestBase):
     @staticmethod
     def _check_permission(**data_dict):
         permission = model.Session.query(extmodel.Permission) \
-            .filter_by(content_type=data_dict['content_type'], operation=data_dict['operation'], state='active') \
+            .filter_by(content_type=data_dict['content_type'], operation=data_dict['operation']) \
             .first()
         assert permission is not None
         permission_actions = model.Session.query(extmodel.PermissionAction.action_name) \
-            .filter_by(permission_id=permission.id, state='active') \
+            .filter_by(permission_id=permission.id) \
             .all()
         actions = [action for (action,) in permission_actions]
         assert set(actions) == set(data_dict['actions'])
@@ -43,42 +43,6 @@ class TestPermissionSetupActions(ActionTestBase):
         self.test_action('permission_define', **input_dict)
         input_dict['actions'] += permission['actions']
         self._check_permission(**input_dict)
-
-    def test_define_valid_undelete_1(self):
-        permission = ckanext_factories.Permission()
-        result, _ = self.test_action('permission_undefine',
-                                     content_type=permission['content_type'],
-                                     operation=permission['operation'],
-                                     actions=permission['actions'][:-1])
-        deleted_action = model.Session.query(extmodel.PermissionAction) \
-            .filter_by(permission_id=permission['id'], action_name=permission['actions'][0]) \
-            .first()
-        assert deleted_action.state == 'deleted'
-        assert result['actions'] == [permission['actions'][1]]
-        result, _ = self.test_action('permission_define',
-                                     content_type=permission['content_type'],
-                                     operation=permission['operation'],
-                                     actions=permission['actions'])
-        assert deleted_action.state == 'active'
-        assert set(result['actions']) == set(permission['actions'])
-
-    def test_define_valid_undelete_2(self):
-        permission = ckanext_factories.Permission()
-        result, _ = self.test_action('permission_undefine',
-                                     content_type=permission['content_type'],
-                                     operation=permission['operation'],
-                                     actions=permission['actions'])
-        assert result['actions'] == []
-        perm = extmodel.Permission.get(permission['id'])
-        perm.delete()
-        model.repo.commit()
-        assert perm.state == 'deleted'
-        result, _ = self.test_action('permission_define',
-                                     content_type=permission['content_type'],
-                                     operation=permission['operation'],
-                                     actions=permission['actions'])
-        assert perm.state == 'active'
-        assert set(result['actions']) == set(permission['actions'])
 
     def test_define_invalid_missing_values(self):
         result, _ = self.test_action('permission_define', should_error=True,

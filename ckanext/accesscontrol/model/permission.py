@@ -1,7 +1,6 @@
 # encoding: utf-8
 
 from sqlalchemy import types, Table, Column, UniqueConstraint
-import vdm.sqlalchemy
 
 from ckan.model import meta, types as _types, domain_object
 
@@ -14,11 +13,8 @@ permission_table = Table(
     UniqueConstraint('content_type', 'operation'),
 )
 
-vdm.sqlalchemy.make_table_stateful(permission_table)
 
-
-class Permission(vdm.sqlalchemy.StatefulObjectMixin,
-                 domain_object.DomainObject):
+class Permission(domain_object.DomainObject):
 
     @classmethod
     def get(cls, reference):

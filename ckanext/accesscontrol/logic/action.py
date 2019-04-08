@@ -71,9 +71,7 @@ def user_privilege_check(context, data_dict):
             .filter(extmodel.UserRole.state == 'active') \
             .filter(extmodel.Role.state == 'active') \
             .filter(extmodel.RolePermission.state == 'active') \
-            .filter(extmodel.Permission.state == 'active') \
             .filter(extmodel.PermissionAction.action_name == action) \
-            .filter(extmodel.PermissionAction.state == 'active') \
             .count() > 0
         result = {
             'success': has_privilege,
@@ -332,7 +330,7 @@ def role_permission_grant(context, data_dict):
         raise tk.ObjectNotFound('%s: %s' % (_('Not found'), _('Role')))
 
     permission = extmodel.Permission.lookup(content_type, operation)
-    if permission is None or permission.state != 'active':
+    if permission is None:
         raise tk.ObjectNotFound('%s: %s' % (_('Not found'), _('Permission')))
 
     role_permission = extmodel.RolePermission.lookup(role_id, content_type, operation)
@@ -430,7 +428,6 @@ def role_permission_list(context, data_dict):
                                             extmodel.Permission.operation == extmodel.RolePermission.operation)) \
         .filter(extmodel.RolePermission.role_id == role_id) \
         .filter(extmodel.RolePermission.state == 'active') \
-        .filter(extmodel.Permission.state == 'active') \
         .all()
     return dictization.permission_list_dictize(permissions, context)
 
@@ -648,7 +645,5 @@ def permission_list(context, data_dict):
     session = context['session']
     context['include_actions'] = asbool(data_dict.get('include_actions'))
 
-    permissions = session.query(extmodel.Permission) \
-        .filter_by(state='active') \
-        .all()
+    permissions = session.query(extmodel.Permission).all()
     return dictization.permission_list_dictize(permissions, context)

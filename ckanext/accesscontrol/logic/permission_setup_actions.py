@@ -34,7 +34,7 @@ def permission_define(context, data_dict):
         one or more underlying domain object types, or even a partition of an underlying
         domain object type (e.g. a specific 'type' of package or group)
     :type content_type: string
-    :param operation: identifies a conceptual action, e.g. 'create', 'read', 'validate'
+    :param operation: identifies a conceptual action, e.g. 'create', 'view', 'validate'
     :type operation: string
     :param actions: names of action functions to be associated with the given content
         type and operation
@@ -63,8 +63,6 @@ def permission_define(context, data_dict):
         permission = extmodel.Permission(content_type=data['content_type'], operation=data['operation'])
         session.add(permission)
         session.flush()  # so that we get the new permission id
-    elif permission.state == 'deleted':
-        permission.undelete()
 
     # create permission actions if they don't exist
     saved_actions = session.query(extmodel.PermissionAction) \
@@ -74,8 +72,6 @@ def permission_define(context, data_dict):
     unsaved_action_names = list(data['actions'])  # copy list so as not to alter caller's view of it
     for saved_action in saved_actions:
         unsaved_action_names.remove(saved_action.action_name)
-        if saved_action.state == 'deleted':
-            saved_action.undelete()
     for action_name in unsaved_action_names:
         permission_action = extmodel.PermissionAction(permission_id=permission.id, action_name=action_name)
         session.add(permission_action)
@@ -122,14 +118,14 @@ def permission_undefine(context, data_dict):
 
     # find permission
     permission = session.query(extmodel.Permission) \
-        .filter_by(content_type=data['content_type'], operation=data['operation'], state='active') \
+        .filter_by(content_type=data['content_type'], operation=data['operation']) \
         .first()
     if permission is None:
         raise tk.ObjectNotFound('%s: %s' % (_('Not found'), _('Permission')))
 
     # remove permission actions
     permission_actions = session.query(extmodel.PermissionAction) \
-        .filter_by(permission_id=permission.id, state='active') \
+        .filter_by(permission_id=permission.id) \
         .filter(extmodel.PermissionAction.action_name.in_(data['actions'])) \
         .all()
     for permission_action in permission_actions:
