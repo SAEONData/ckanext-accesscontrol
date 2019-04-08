@@ -10,6 +10,7 @@ _default_allow_actions = (
     'organization_list_for_user',
     'organization_list',
     'group_list',
+    'group_edit_permissions',  # another pseudo-action
 )
 
 
