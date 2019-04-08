@@ -138,39 +138,17 @@ def permission_undefine(context, data_dict):
     return dictization.permission_dictize(permission, context)
 
 
-def permission_cleanup(context, data_dict):
+def permission_delete_all(context, data_dict):
     """
-    Delete permission objects that have no associated actions, as well as any
-    dependent role permissions.
+    Delete all permissions and permission actions.
     """
-    log.info("Cleaning up unused permissions", data_dict)
-    tk.check_access('permission_cleanup', context, data_dict)
+    log.info("Deleting all permissions", data_dict)
+    tk.check_access('permission_delete_all', context, data_dict)
 
     model = context['model']
     session = context['session']
-    user = context['user']
-    defer_commit = context.get('defer_commit', False)
 
-    unused_permissions = session.query(extmodel.Permission) \
-        .filter(~session.query(extmodel.PermissionAction)
-                .filter(extmodel.PermissionAction.permission_id == extmodel.Permission.id)
-                .filter_by(state='active')
-                .exists()) \
-        .all()
+    session.query(extmodel.PermissionAction).delete(synchronize_session=False)
+    session.query(extmodel.Permission).delete(synchronize_session=False)
 
-    for permission in unused_permissions:
-        role_permissions = session.query(extmodel.RolePermission) \
-            .filter_by(permission_id=permission.id, state='active') \
-            .all()
-
-        if role_permissions:
-            rev = model.repo.new_revision()
-            rev.author = user
-            rev.message = _("Delete permission '%s' on '%s'") % (permission.operation, permission.content_type)
-            for role_permission in role_permissions:
-                role_permission.delete()
-
-        permission.delete()
-
-    if not defer_commit:
-        model.repo.commit()
+    model.repo.commit()

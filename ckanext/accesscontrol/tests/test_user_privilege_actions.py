@@ -73,29 +73,31 @@ class TestUserPrivilegeActions(ActionTestBase):
         assert result['success'] is False
         assert_error(result, 'msg', 'User is not permitted to perform the action')
 
-    def test_cleaned_up_permission(self):
+    def test_deleted_permissions(self):
         self._prepare_user_privilege()
-        call_action('permission_undefine',
-                    content_type=self.permission['content_type'],
-                    operation=self.permission['operation'],
-                    actions=self.permission['actions'])
-        call_action('permission_cleanup')
+        call_action('permission_delete_all')
         result, _ = self.test_action('user_privilege_check',
                                      action=self.permission['actions'][0],
                                      user_id=self.user['name'])
         assert result['success'] is False
         assert_error(result, 'msg', 'User is not permitted to perform the action')
 
-    def test_deleted_permission(self):
-        self._prepare_user_privilege()
-        permission = extmodel.Permission.get(self.permission['id'])
-        permission.delete()
-        model.repo.commit()
+        # restore the permissions - since the role_permissions still exist,
+        # the user should again be privileged to perform the action
+        call_action('permission_define',
+                    content_type=self.permission['content_type'],
+                    operation=self.permission['operation'],
+                    actions=self.permission['actions'])
         result, _ = self.test_action('user_privilege_check',
                                      action=self.permission['actions'][0],
                                      user_id=self.user['name'])
-        assert result['success'] is False
-        assert_error(result, 'msg', 'User is not permitted to perform the action')
+        assert result['success'] is True
+        assert_error(result, 'msg', 'User is permitted to perform the action')
+        result, _ = self.test_action('user_privilege_check',
+                                     action=self.permission['actions'][1],
+                                     user_id=self.user['name'])
+        assert result['success'] is True
+        assert_error(result, 'msg', 'User is permitted to perform the action')
 
     def test_missing_values(self):
         result, _ = self.test_action('user_privilege_check', should_error=True)

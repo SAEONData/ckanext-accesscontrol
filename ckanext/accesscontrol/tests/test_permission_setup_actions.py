@@ -116,37 +116,11 @@ class TestPermissionSetupActions(ActionTestBase):
                                      actions=[1,])
         assert_error(result, 'actions', 'Not a string')
 
-    def test_cleanup(self):
-        permission1 = ckanext_factories.Permission()
-        permission2 = ckanext_factories.Permission()
-        call_action('permission_undefine',
-                    content_type=permission1['content_type'],
-                    operation=permission1['operation'],
-                    actions=permission1['actions'][:-1])
-        call_action('permission_undefine',
-                    content_type=permission2['content_type'],
-                    operation=permission2['operation'],
-                    actions=permission2['actions'])
-
-        self.test_action('permission_cleanup')
-        del permission1['actions'][0]
-        self._check_permission(**permission1)
-        permission2 = extmodel.Permission.lookup(permission2['content_type'], permission2['operation'])
-        assert permission2.state == 'deleted'
-
-    def test_cleanup_cascade(self):
-        role_permission = ckanext_factories.RolePermission()
-        permission = extmodel.Permission.get(role_permission['permission_id'])
-        actions = model.Session.query(extmodel.PermissionAction.action_name) \
-            .filter_by(permission_id=permission.id) \
-            .all()
-        actions = [action for (action,) in actions]
-        call_action('permission_undefine',
-                    content_type=permission.content_type,
-                    operation=permission.operation,
-                    actions=actions)
-        self.test_action('permission_cleanup')
-        permission = extmodel.Permission.lookup(permission.content_type, permission.operation)
-        assert permission.state == 'deleted'
-        role_permission = extmodel.RolePermission.get(role_permission['id'])
-        assert role_permission.state == 'deleted'
+    def test_delete_all(self):
+        ckanext_factories.Permission()
+        ckanext_factories.Permission()
+        assert model.Session.query(extmodel.Permission).count() > 0
+        assert model.Session.query(extmodel.PermissionAction).count() > 0
+        self.test_action('permission_delete_all')
+        assert model.Session.query(extmodel.Permission).count() == 0
+        assert model.Session.query(extmodel.PermissionAction).count() == 0

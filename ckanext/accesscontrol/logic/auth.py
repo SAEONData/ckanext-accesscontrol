@@ -81,6 +81,6 @@ def permission_undefine(context, data_dict):
     return {'success': False}
 
 
-def permission_cleanup(context, data_dict):
+def permission_delete_all(context, data_dict):
     # sysadmins only
     return {'success': False}

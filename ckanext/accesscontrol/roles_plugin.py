@@ -106,7 +106,7 @@ class RolesPlugin(p.SingletonPlugin):
             'permission_list': action.permission_list,
             'permission_define': permission_setup_actions.permission_define,
             'permission_undefine': permission_setup_actions.permission_undefine,
-            'permission_cleanup': permission_setup_actions.permission_cleanup,
+            'permission_delete_all': permission_setup_actions.permission_delete_all,
         }
 
     def get_auth_functions(self):
@@ -127,7 +127,7 @@ class RolesPlugin(p.SingletonPlugin):
             'permission_list': auth.permission_list,
             'permission_define': auth.permission_define,
             'permission_undefine': auth.permission_undefine,
-            'permission_cleanup': auth.permission_cleanup,
+            'permission_delete_all': auth.permission_delete_all,
         }
 
     def update_config(self, config):
