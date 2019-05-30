@@ -126,6 +126,8 @@ class ActionTestBase(FunctionalTestBase):
         }
 
         obj = None
+        if not should_error:
+            exception_class = None
         try:
             result = call_action(action_name, context, **kwargs)
         except exception_class, e:
