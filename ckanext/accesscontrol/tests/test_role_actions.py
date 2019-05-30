@@ -112,7 +112,7 @@ class TestRoleActions(ActionTestBase):
     def test_permission_revoke_invalid_not_granted(self):
         role = ckanext_factories.Role()
         permission = ckanext_factories.Permission()
-        result, _ = self.test_action('role_permission_revoke',
+        result, _ = self.test_action('role_permission_revoke', should_error=True,
                                      role_id=role['name'],
                                      content_type=permission['content_type'],
                                      operation=permission['operation'])
