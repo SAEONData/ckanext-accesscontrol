@@ -71,6 +71,7 @@ Where a default is not defined, a value **must** be set in the configuration fil
 | ckan.openidconnect.username_field         | name  | The user name field in the ID token.
 | ckan.openidconnect.email_field            | email | The email address field in the ID token.
 | ckan.openidconnect.rolename_field         | role  | The role name field in the ID token.
-| ckan.openidconnect.insecure_transport     | False | Set to True for development / testing to permit insecure communication with an auth server. Never set this option in production!
+| ckan.openidconnect.insecure_transport     | False | Set to True in a dev environment to permit insecure communication with the auth server. Never set this option in production!
+| ckan.openidconnect.no_verify_ssl_cert     | False | Set to True in a dev environment to not verify the SSL certificate of the auth server. Never set this option in production!
 
 Restart your CKAN instance after any configuration changes.

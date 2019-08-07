@@ -50,6 +50,7 @@ class AccessControlConfig(object):
                 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
                 log.warning("Allowing OAuth2 over insecure HTTP")
 
+        self.no_verify_ssl_cert = asbool(ckan_config.get('ckan.openidconnect.no_verify_ssl_cert'))
         self.ckan_url = urljoin(ckan_config.get('ckan.site_url'), ckan_config.get('ckan.root_path'))
         self.redirect_url = urljoin(self.ckan_url, 'oidc/callback')
         self.postlogout_redirect_url = urljoin(self.ckan_url, 'oidc/logged_out')

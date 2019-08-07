@@ -84,7 +84,8 @@ def callback():
         _verify_state(state)
 
         oauth2session = OAuth2Session(client_id=config.client_id, redirect_uri=config.redirect_url)
-        token = oauth2session.fetch_token(config.token_endpoint, client_secret=config.client_secret, code=auth_code)
+        token = oauth2session.fetch_token(config.token_endpoint, client_secret=config.client_secret, code=auth_code,
+                                          verify=not config.no_verify_ssl_cert)
         _validate_token(token)
         user_id, user_data = _request_userinfo(token)
         _save_token(user_id, token)
@@ -173,7 +174,7 @@ def _validate_token(token):
     """
     access_token = token.get('access_token') if token else ''
     response = requests.post(config.introspection_endpoint, data={'token': access_token},
-                             auth=(config.api_id, config.api_secret))
+                             auth=(config.api_id, config.api_secret), verify=not config.no_verify_ssl_cert)
     response.raise_for_status()
     result = response.json()
     scopes = result.get('scope', '').split()
@@ -189,7 +190,7 @@ def _request_userinfo(token):
     :returns: tuple(user_id, user_data) where user_data is a dict of additional user values
     """
     oauth2session = OAuth2Session(token=token)
-    response = oauth2session.get(config.userinfo_endpoint)
+    response = oauth2session.get(config.userinfo_endpoint, verify=not config.no_verify_ssl_cert)
     response.raise_for_status()
     claims = response.json()
     user_id = claims.get(config.userid_field)
