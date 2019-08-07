@@ -65,7 +65,6 @@ class AccessControlConfig(object):
         self.api_scope = self._get_option('ckan.openidconnect.api_scope')
         self.api_id = self._get_option('ckan.openidconnect.api_id')
         self.api_secret = self._get_option('ckan.openidconnect.api_secret')
-        self.authorized_clients = self._get_option('ckan.openidconnect.authorized_clients')
         self.register_url = self._get_option('ckan.openidconnect.register_url')
         self.reset_url = self._get_option('ckan.openidconnect.reset_url')
         self.edit_url = self._get_option('ckan.openidconnect.edit_url')
@@ -77,7 +76,6 @@ class AccessControlConfig(object):
             raise AccessControlConfigError("Missing configuration options(s): %s", ', '.join(self._missing))
 
         self.scopes = ['openid', self.api_scope]
-        self.authorized_clients = self.authorized_clients.split()
 
     def is_sysadmin_role(self, role):
         """

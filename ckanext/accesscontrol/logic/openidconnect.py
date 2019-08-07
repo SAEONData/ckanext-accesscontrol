@@ -177,10 +177,7 @@ def _validate_token(token):
     response.raise_for_status()
     result = response.json()
     scopes = result.get('scope', '').split()
-    client_id = result.get('client_id')
-    valid = result.get('active') and \
-            config.api_scope in scopes and \
-            client_id in config.authorized_clients
+    valid = result.get('active') and config.api_scope in scopes
     if not valid:
         raise OpenIDConnectError(_("Invalid access token"))
 
