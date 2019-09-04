@@ -29,6 +29,10 @@ def identify():
     if getattr(tk.c, 'user', None):
         return  # user already identified
 
+    # initialize this to something, because CKAN's user_create (which we call from _persist_userinfo)
+    # reads context['user']; CKAN does this automatically for UI requests, but not for API calls
+    tk.c.user = ''
+
     log.debug("Identifying user")
     user_id = None
     user_data = None
