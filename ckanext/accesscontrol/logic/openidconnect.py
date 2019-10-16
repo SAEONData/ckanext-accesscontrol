@@ -6,11 +6,15 @@ import requests
 from requests_oauthlib import OAuth2Session
 from oauthlib.oauth2 import OAuth2Error
 from requests import RequestException
+from sqlalchemy.sql import select
 
 import ckan.plugins.toolkit as tk
 from ckan.common import _
 from ckan.lib.redis import connect_to_redis
 from ckanext.accesscontrol.config import config
+import ckan.model as model
+from ckanext.accesscontrol.model.user_role import user_role_table
+from ckanext.accesscontrol.model.role import role_table
 
 log = logging.getLogger(__name__)
 
@@ -29,33 +33,29 @@ def identify():
     if getattr(tk.c, 'user', None):
         return  # user already identified
 
-    # initialize this to something, because CKAN's user_create (which we call from _persist_userinfo)
+    # initialize this to something, because CKAN's user_create (which we call from _save_objects)
     # reads context['user']; CKAN does this automatically for UI requests, but not for API calls
     tk.c.user = ''
 
     log.debug("Identifying user")
-    user_id = None
-    user_data = None
 
     # API calls should arrive with an access token in the auth header
     auth_header = tk.request.headers.get('Authorization')
     if auth_header and auth_header.startswith('Bearer '):
         token = {'access_token': auth_header[7:]}
         try:
-            _validate_token(token)
-            user_id, user_data = _request_userinfo(token)
+            token_data = _extract_token_data(token)
+            _save_objects(token_data)
+            tk.c.user = token_data['email']
         except anyAuthException, e:
             log.error(str(e))
-            return
+        return
 
     # if not an API call, we're dealing with a user logged in via the CKAN UI
-    if not user_id:
-        environ = tk.request.environ
-        user_id = environ.get('repoze.who.identity', {}).get('repoze.who.userid')
-
+    environ = tk.request.environ
+    user_id = environ.get('repoze.who.identity', {}).get('repoze.who.userid')
     if user_id:
-        user_dict = _persist_userinfo(user_id, user_data)
-        _persist_roleinfo(user_id, user_data)
+        user_dict = tk.get_action('user_show')({'ignore_auth': True}, {'id': user_id})
         tk.c.user = user_dict['name']
 
 
@@ -90,11 +90,10 @@ def callback():
         oauth2session = OAuth2Session(client_id=config.client_id, redirect_uri=config.redirect_url)
         token = oauth2session.fetch_token(config.token_endpoint, client_secret=config.client_secret, code=auth_code,
                                           verify=not config.no_verify_ssl_cert)
-        _validate_token(token)
-        user_id, user_data = _request_userinfo(token)
+        token_data = _extract_token_data(token)
+        user_id = token_data['user_id']
         _save_token(user_id, token)
-        _persist_userinfo(user_id, user_data)
-        _persist_roleinfo(user_id, user_data)
+        _save_objects(token_data)
         _remember_login(user_id)
 
     except anyAuthException, e:
@@ -170,58 +169,97 @@ def _load_token(user_id):
     return token
 
 
-def _validate_token(token):
+def _extract_token_data(token):
     """
-    Get detailed info about the access token from the auth server, and check that it is
-    valid for our CKAN instance.
-    :param token: token dictionary
+    Validate the token and get access and user info from the auth server.
+
+    Note: This is integrated specifically with the ODP Identity Service in terms
+    of data that is expected to be provided on the access and ID tokens.
+
+    :param token: the received encoded token dict
+    :returns: dict with decoded token data, as follows::
+        {
+            'user_id'
+            'email'
+            'firstname'
+            'lastname'
+            'superuser'
+            'privileges': [{
+                'institution'
+                'institution_name'
+                'role'
+                'role_name'
+            }]
+        }
     """
+    # get access token data from the introspection endpoint
     access_token = token.get('access_token') if token else ''
     response = requests.post(config.introspection_endpoint, data={'token': access_token},
                              auth=(config.api_id, config.api_secret), verify=not config.no_verify_ssl_cert)
     response.raise_for_status()
-    result = response.json()
-    scopes = result.get('scope', '').split()
-    valid = result.get('active') and config.api_scope in scopes
+    access_token_data = response.json()
+    scopes = access_token_data.get('scope', '').split()
+    valid = access_token_data.get('active') and config.api_scope in scopes
     if not valid:
         raise OpenIDConnectError(_("Invalid access token"))
 
-
-def _request_userinfo(token):
-    """
-    Get user info from the auth server.
-    :param token: token dictionary
-    :returns: tuple(user_id, user_data) where user_data is a dict of additional user values
-    """
+    # get id token data from the userinfo endpoint
     oauth2session = OAuth2Session(token=token)
     response = oauth2session.get(config.userinfo_endpoint, verify=not config.no_verify_ssl_cert)
     response.raise_for_status()
-    claims = response.json()
-    user_id = claims.get(config.userid_field)
-    user_data = {key: claims.get(key, '') for key in (config.username_field, config.email_field)}
-    roles = claims.get(config.rolename_field) or []
-    if isinstance(roles, basestring):
-        roles = [roles]
-    user_data[config.rolename_field] = roles
-    return user_id, user_data
+    id_token_data = response.json()
+
+    user_id = access_token_data.get('sub')
+    email = id_token_data.get('email')
+    firstname = id_token_data.get('firstname', '')
+    lastname = id_token_data.get('lastname', '')
+    if not user_id or not email:
+        raise OpenIDConnectError(_("Invalid access token"))
+
+    superuser = access_token_data.get('ext', {}).get('superuser', False)
+    if type(superuser) is not bool:
+        raise OpenIDConnectError(_("Invalid access token"))
+
+    privileges = []
+    for privilege in access_token_data.get('ext', {}).get('privileges', []):
+        if privilege.get('scope') == config.api_scope:
+            institution = privilege.get('institution')
+            institution_name = privilege.get('institution_name', institution)
+            role = privilege.get('role')
+            role_name = privilege.get('role_name', role)
+            if not institution or not role:
+                raise OpenIDConnectError(_("Invalid access token"))
+            privileges += [{
+                'institution': institution,
+                'institution_name': institution_name,
+                'role': role,
+                'role_name': role_name,
+            }]
+
+    return {
+        'user_id': user_id,
+        'email': email,
+        'firstname': firstname,
+        'lastname': lastname,
+        'superuser': superuser,
+        'privileges': privileges,
+    }
 
 
-def _persist_userinfo(user_id, user_data):
+def _save_objects(token_data):
     """
-    Create or update a user in the CKAN database, to correspond with the OpenID user info
-    obtained from the authorization server. If user_data is not provided, simply return
-    the user record if it exists.
-
-    :param user_id: OpenID user id; becomes the CKAN user id
-    :param user_data: dict of additional user info obtained from the auth server
-
-    :returns: the CKAN user record
-    :rtype: dictionary
+    Create or update CKAN models.
     """
-    user_data = user_data or {}
-    roles = user_data.get(config.rolename_field, [])
-    is_sysadmin = any((True for role in roles if config.is_sysadmin_role(role)))
+    _save_user(token_data)
+    _save_organizations(token_data)
+    _save_roles(token_data)
+    _save_privileges(token_data)
 
+
+def _save_user(token_data):
+    """
+    Create or update the CKAN user represented by the token.
+    """
     context = {
         'ignore_auth': True,
         'keep_email': True,
@@ -229,75 +267,133 @@ def _persist_userinfo(user_id, user_data):
             'id': [unicode],
             'name': [unicode],
             'email': [unicode],
+            'fullname': [unicode],
             'sysadmin': [],
         },
     }
     data_dict = {
-        'id': user_id,
-        'name': user_data.get(config.username_field),
-        'email': user_data.get(config.email_field),
-        'sysadmin': is_sysadmin,
+        'id': token_data['user_id'],
+        'name': token_data['email'],
+        'email': token_data['email'],
+        'fullname': token_data['firstname'] + ' ' + token_data['lastname'],
+        'sysadmin': token_data['superuser'],
     }
     try:
-        user_dict = tk.get_action('user_show')(context, {'id': user_id})
-
-        if user_data:
-            update = False
-            for key, value in data_dict.iteritems():
-                if user_dict.get(key) != value:
-                    update = True
-                    break
-            if update:
-                user_dict = tk.get_action('user_update')(context, data_dict)
-                log.info("Updated user record for OpenID user %s (%s)", user_id, user_dict['name'])
+        user_dict = tk.get_action('user_show')(context, {'id': data_dict['id']})
+        update = False
+        for key, value in data_dict.iteritems():
+            if user_dict.get(key) != value:
+                update = True
+                break
+        if update:
+            user_dict = tk.get_action('user_update')(context, data_dict)
+            log.info("Updated user record for %s (%s)", user_dict['id'], user_dict['name'])
 
     except tk.ObjectNotFound:
-        if not user_data:
-            raise
         user_dict = tk.get_action('user_create')(context, data_dict)
-        log.info("Created user record for OpenID user %s (%s)", user_id, user_dict['name'])
-
-    return user_dict
+        log.info("Created user record for %s (%s)", user_dict['id'], user_dict['name'])
 
 
-def _persist_roleinfo(user_id, user_data):
+def _save_organizations(token_data):
     """
-    Synchronize user-role assignments with the role info obtained from the authorization
-    server. Roles are created on the fly as needed, but existing deleted roles are left
-    as is.
+    Create or update any organizations referenced in the token privileges.
     """
-    if not user_data:
-        return
+    # make the 'default' sysadmin user the admin of any created organizations
+    # note: we use a new context for each action call to avoid CKAN confusion
+    for privilege in token_data['privileges']:
+        org_name = privilege['institution']
+        org_title = privilege['institution_name']
+        try:
+            org_dict = tk.get_action('organization_show')({'ignore_auth': True}, {'id': org_name})
+            if org_dict['title'] != org_title:
+                org_dict['title'] = org_title
+                tk.get_action('organization_update')({'ignore_auth': True, 'user': 'default'}, org_dict)
+        except tk.ObjectNotFound:
+            tk.get_action('organization_create')({'ignore_auth': True, 'user': 'default'},
+                                                 {'name': org_name, 'title': org_title})
 
+
+def _save_roles(token_data):
+    """
+    Create or update any roles referenced in the token privileges.
+    """
     try:
         role_show = tk.get_action('role_show')
         role_create = tk.get_action('role_create')
-        user_role_list = tk.get_action('user_role_list')
+        role_update = tk.get_action('role_update')
+    except:
+        return  # roles plugin is not enabled
+
+    # note: we use a new context for each action call to avoid CKAN confusion
+    for privilege in token_data['privileges']:
+        role_name = privilege['role']
+        role_title = privilege['role_name']
+        try:
+            role_dict = role_show({'ignore_auth': True}, {'id': role_name})
+            if role_dict['title'] != role_title:
+                role_dict['title'] = role_title
+                role_update({'ignore_auth': True}, role_dict)
+        except tk.ObjectNotFound:
+            role_create({'ignore_auth': True}, {'name': role_name, 'title': role_title})
+
+
+def _save_privileges(token_data):
+    """
+    Synchronize the CKAN user's role assignments with those specified in the token.
+    """
+    try:
         user_role_assign = tk.get_action('user_role_assign')
         user_role_unassign = tk.get_action('user_role_unassign')
     except:
         return  # roles plugin is not enabled
 
-    context = {'ignore_auth': True}
-    roles = [role.lower()
-             for role in user_data.get(config.rolename_field, [])
-             if not config.is_sysadmin_role(role)]
+    session = model.Session
+    user_id = token_data['user_id']
 
-    assigned_roles = user_role_list(context, {'user_id': user_id})
-    roles_to_assign = set(roles) - set(assigned_roles)
-    roles_to_unassign = set(assigned_roles) - set(roles)
+    requested_roles = set()
+    for privilege in token_data['privileges']:
+        requested_roles |= {(privilege['role'], privilege['institution'])}
 
-    for role_name in roles_to_assign:
+    assigned_roles = set()
+    org_table = model.group.group_table
+    q = select([role_table.c.name, org_table.c.name],
+               from_obj=user_role_table
+               .join(role_table, user_role_table.c.role_id == role_table.c.id)
+               .join(org_table, user_role_table.c.organization_id == org_table.c.id)) \
+        .where(user_role_table.c.user_id == user_id) \
+        .where(user_role_table.c.state == 'active') \
+        .where(role_table.c.state == 'active') \
+        .where(org_table.c.state == 'active')
+    results = session.execute(q)
+    for result in results:
+        assigned_roles |= {(result[0], result[1])}
+
+    roles_to_assign = requested_roles - assigned_roles
+    roles_to_unassign = assigned_roles - requested_roles
+
+    # note: we use a new context for each action call to avoid CKAN confusion
+    for role_to_assign in roles_to_assign:
         try:
-            role_dict = role_show(context, {'id': role_name})
+            user_role_assign({'ignore_auth': True}, {
+                'user_id': user_id,
+                'role_id': role_to_assign[0],
+                'organization_id': role_to_assign[1],
+            })
         except tk.ObjectNotFound:
-            role_dict = role_create(context, {'name': role_name, 'title': role_name.title()})
+            # one of the objects involved has been deleted in CKAN; ignore and continue
+            pass
 
-        if role_dict['state'] == 'active':
-            user_role_assign(context, {'user_id': user_id, 'role_id': role_name})
-
-    for role_name in roles_to_unassign:
-        user_role_unassign(context, {'user_id': user_id, 'role_id': role_name})
+    # note: we use a new context for each action call to avoid CKAN confusion
+    for role_to_unassign in roles_to_unassign:
+        try:
+            user_role_unassign({'ignore_auth': True}, {
+                'user_id': user_id,
+                'role_id': role_to_unassign[0],
+                'organization_id': role_to_unassign[1],
+            })
+        except tk.ObjectNotFound:
+            # one of the objects involved has been deleted in CKAN; ignore and continue
+            pass
 
 
 def _remember_login(user_id):
