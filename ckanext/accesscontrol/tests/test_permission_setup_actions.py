@@ -1,7 +1,6 @@
 # encoding: utf-8
 
 from ckan import model
-from ckan.tests.helpers import call_action
 from ckanext.accesscontrol import model as extmodel
 from ckanext.accesscontrol.tests import (
     ActionTestBase,

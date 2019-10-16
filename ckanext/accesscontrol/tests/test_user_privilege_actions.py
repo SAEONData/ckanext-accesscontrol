@@ -1,9 +1,7 @@
 # encoding: utf-8
 
-from ckan import model
 from ckan.tests.helpers import call_action
 from ckan.tests import factories as ckan_factories
-from ckanext.accesscontrol import model as extmodel
 from ckanext.accesscontrol.logic import _default_allow_actions
 from ckanext.accesscontrol.tests import (
     ActionTestBase,
@@ -16,8 +14,11 @@ class TestUserPrivilegeActions(ActionTestBase):
 
     def _prepare_user_privilege(self):
         self.user = ckan_factories.User()
+        self.org = ckan_factories.Organization()
         self.role = ckanext_factories.Role()
-        self.user_role = ckanext_factories.UserRole(role_id=self.role['id'], user_id=self.user['id'])
+        self.user_role = ckanext_factories.UserRole(role_id=self.role['id'],
+                                                    user_id=self.user['id'],
+                                                    organization_id=self.org['id'])
         self.permission = ckanext_factories.Permission()
         self.role_permission = ckanext_factories.RolePermission(role_id=self.role['id'],
                                                                 content_type=self.permission['content_type'],
@@ -54,7 +55,10 @@ class TestUserPrivilegeActions(ActionTestBase):
 
     def test_unassigned_role(self):
         self._prepare_user_privilege()
-        call_action('user_role_unassign', role_id=self.role['id'], user_id=self.user['id'])
+        call_action('user_role_unassign',
+                    role_id=self.role['id'],
+                    user_id=self.user['id'],
+                    organization_id=self.org['id'])
         result, _ = self.test_action('user_privilege_check',
                                      action=self.permission['actions'][0],
                                      user_id=self.user['name'])

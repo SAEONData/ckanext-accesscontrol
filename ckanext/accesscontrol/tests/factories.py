@@ -95,8 +95,10 @@ class UserRole(factory.Factory):
         context = {'user': ckan_factories._get_action_user_name(kwargs)}
         role_id = kwargs.pop('role_id', None) or Role()['id']
         user_id = kwargs.pop('user_id', None) or ckan_factories.User()['id']
+        organization_id = kwargs.pop('organization_id', None) or ckan_factories.Organization()['id']
 
         return helpers.call_action('user_role_assign', context=context,
                                    role_id=role_id,
                                    user_id=user_id,
+                                   organization_id=organization_id,
                                    **kwargs)
