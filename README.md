@@ -43,12 +43,6 @@ Restart your CKAN instance.
 
 ## Configuration
 
-The following common options are available; these apply to both _roles_ and _openidconnect_ plugins.
-
-| Option | Default | Description |
-| ------ | ------- | ----------- |
-| ckan.accesscontrol.sysadmin_role | sysadmin | The sysadmin role name.
-
 The following options are applicable to the _openidconnect_ plugin.
 Where a default is not defined, a value **must** be set in the configuration file.
 
@@ -67,10 +61,6 @@ Where a default is not defined, a value **must** be set in the configuration fil
 | ckan.openidconnect.register_url           | | Auth service URL for new user registration.
 | ckan.openidconnect.reset_url              | | Auth service URL for resetting a password.
 | ckan.openidconnect.edit_url               | | Auth service URL for editing a user profile.
-| ckan.openidconnect.userid_field           | sub   | The user id field in the ID token.
-| ckan.openidconnect.username_field         | name  | The user name field in the ID token.
-| ckan.openidconnect.email_field            | email | The email address field in the ID token.
-| ckan.openidconnect.rolename_field         | role  | The role name field in the ID token.
 | ckan.openidconnect.insecure_transport     | False | Set to True in a dev environment to permit insecure communication with the auth server. Never set this option in production!
 | ckan.openidconnect.no_verify_ssl_cert     | False | Set to True in a dev environment to not verify the SSL certificate of the auth server. Never set this option in production!
 

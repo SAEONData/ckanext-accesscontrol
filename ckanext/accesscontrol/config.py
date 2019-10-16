@@ -10,13 +10,7 @@ from ckan.lib.redis import is_redis_available
 
 log = logging.getLogger(__name__)
 
-_config_defaults = {
-    'ckan.openidconnect.userid_field': 'sub',
-    'ckan.openidconnect.username_field': 'name',
-    'ckan.openidconnect.email_field': 'email',
-    'ckan.openidconnect.rolename_field': 'role',
-    'ckan.accesscontrol.sysadmin_role': 'sysadmin',
-}
+_config_defaults = {}
 
 
 class AccessControlConfigError(Exception):
@@ -36,7 +30,7 @@ class AccessControlConfig(object):
         """
         Load the config options common to multiple plugins in this extension.
         """
-        self.sysadmin_role = self._get_option('ckan.accesscontrol.sysadmin_role')
+        pass
 
     def load_openidconnect_options(self):
         """
@@ -69,20 +63,10 @@ class AccessControlConfig(object):
         self.register_url = self._get_option('ckan.openidconnect.register_url')
         self.reset_url = self._get_option('ckan.openidconnect.reset_url')
         self.edit_url = self._get_option('ckan.openidconnect.edit_url')
-        self.userid_field = self._get_option('ckan.openidconnect.userid_field')
-        self.username_field = self._get_option('ckan.openidconnect.username_field')
-        self.email_field = self._get_option('ckan.openidconnect.email_field')
-        self.rolename_field = self._get_option('ckan.openidconnect.rolename_field')
         if self._missing:
             raise AccessControlConfigError("Missing configuration options(s): %s", ', '.join(self._missing))
 
         self.scopes = ['openid', self.api_scope]
-
-    def is_sysadmin_role(self, role):
-        """
-        Test whether the given role name represents the sysadmin role.
-        """
-        return role.lower() == self.sysadmin_role.lower()
 
 
 config = AccessControlConfig()
