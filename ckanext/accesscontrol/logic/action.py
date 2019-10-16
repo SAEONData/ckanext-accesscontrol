@@ -442,6 +442,8 @@ def user_role_assign(context, data_dict):
     :type user_id: string
     :param role_id: the id or name of the role
     :type role_id: string
+    :param organization_id: the id or name of the organization for which the user role assignment applies
+    :type organization_id: string
 
     :returns: the newly created user role
     :rtype: dictionary
@@ -453,7 +455,7 @@ def user_role_assign(context, data_dict):
     author = context['user']
     defer_commit = context.get('defer_commit', False)
 
-    user_id, role_id = tk.get_or_bust(data_dict, ['user_id', 'role_id'])
+    user_id, role_id, organization_id = tk.get_or_bust(data_dict, ['user_id', 'role_id', 'organization_id'])
     user = model.User.get(user_id)
     if user is not None and user.state == 'active':
         user_id = user.id
@@ -466,12 +468,19 @@ def user_role_assign(context, data_dict):
     else:
         raise tk.ObjectNotFound('%s: %s' % (_('Not found'), _('Role')))
 
-    user_role = extmodel.UserRole.lookup(user_id, role_id)
+    organization = model.Group.get(organization_id)
+    if organization is not None and organization.state == 'active' and organization.type == 'organization':
+        organization_id = organization.id
+    else:
+        raise tk.ObjectNotFound('%s: %s' % (_('Not found'), _('Organization')))
+
+    user_role = extmodel.UserRole.lookup(user_id, role_id, organization_id)
     if user_role and user_role.state == 'active':
         raise tk.ValidationError(_('The role has already been assigned to the user'))
 
     data_dict['user_id'] = user_id
     data_dict['role_id'] = role_id
+    data_dict['organization_id'] = organization_id
     data_dict['state'] = 'active'
     user_role = dictization.user_role_dict_save(data_dict, context)
 
@@ -480,7 +489,7 @@ def user_role_assign(context, data_dict):
     if 'message' in context:
         rev.message = context['message']
     else:
-        rev.message = _(u'REST API: Assign role %s to user %s') % (role.name, user.name)
+        rev.message = _(u'REST API: Assign role %s to user %s in organization %s') % (role.name, user.name, organization.name)
 
     if not defer_commit:
         model.repo.commit()
@@ -498,6 +507,8 @@ def user_role_unassign(context, data_dict):
     :type user_id: string
     :param role_id: the id or name of the role
     :type role_id: string
+    :param organization_id: the id or name of the organization for which the user role assignment applies
+    :type organization_id: string
     """
     log.info("Unassigning role from user: %r", data_dict)
     tk.check_access('user_role_unassign', context, data_dict)
@@ -506,7 +517,7 @@ def user_role_unassign(context, data_dict):
     author = context['user']
     defer_commit = context.get('defer_commit', False)
 
-    user_id, role_id = tk.get_or_bust(data_dict, ['user_id', 'role_id'])
+    user_id, role_id, organization_id = tk.get_or_bust(data_dict, ['user_id', 'role_id', 'organization_id'])
     user = model.User.get(user_id)
     if user is not None and user.state == 'active':
         user_id = user.id
@@ -519,7 +530,13 @@ def user_role_unassign(context, data_dict):
     else:
         raise tk.ObjectNotFound('%s: %s' % (_('Not found'), _('Role')))
 
-    user_role = extmodel.UserRole.lookup(user_id, role_id)
+    organization = model.Group.get(organization_id)
+    if organization is not None and organization.state == 'active' and organization.type == 'organization':
+        organization_id = organization.id
+    else:
+        raise tk.ObjectNotFound('%s: %s' % (_('Not found'), _('Organization')))
+
+    user_role = extmodel.UserRole.lookup(user_id, role_id, organization_id)
     if not user_role or user_role.state != 'active':
         raise tk.ValidationError(_('The user does not have the specified role'))
 
@@ -530,7 +547,7 @@ def user_role_unassign(context, data_dict):
     if 'message' in context:
         rev.message = context['message']
     else:
-        rev.message = _(u'REST API: Unassign role %s from user %s') % (role.name, user.name)
+        rev.message = _(u'REST API: Unassign role %s from user %s in organization %s') % (role.name, user.name, organization.name)
 
     if not defer_commit:
         model.repo.commit()

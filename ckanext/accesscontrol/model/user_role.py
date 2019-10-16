@@ -11,7 +11,8 @@ user_role_table = Table(
     Column('id', types.UnicodeText, primary_key=True, default=_types.make_uuid),
     Column('user_id', types.UnicodeText, ForeignKey('user.id'), nullable=False),
     Column('role_id', types.UnicodeText, ForeignKey('role.id'), nullable=False),
-    UniqueConstraint('user_id', 'role_id'),
+    Column('organization_id', types.UnicodeText, ForeignKey('group.id'), nullable=False),
+    UniqueConstraint('user_id', 'role_id', 'organization_id'),
 )
 
 vdm.sqlalchemy.make_table_stateful(user_role_table)
@@ -33,12 +34,12 @@ class UserRole(vdm.sqlalchemy.RevisionedObjectMixin,
         return meta.Session.query(cls).get(reference)
 
     @classmethod
-    def lookup(cls, user_id, role_id):
+    def lookup(cls, user_id, role_id, organization_id):
         """
-        Returns a UserRole object by user id and role id.
+        Returns a UserRole object by user id, role id and organization id.
         """
         return meta.Session.query(cls) \
-            .filter_by(user_id=user_id, role_id=role_id) \
+            .filter_by(user_id=user_id, role_id=role_id, organization_id=organization_id) \
             .first()
 
 
