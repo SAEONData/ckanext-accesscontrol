@@ -154,47 +154,6 @@ class RoleController(tk.BaseController):
         tk.c.form = tk.render('role/permissions_form.html')
         return tk.render('role/permissions.html')
 
-    def users(self, id):
-        context = {'model': model, 'session': model.Session, 'user': tk.c.user,
-                   'save': 'save' in tk.request.params}
-
-        try:
-            tk.c.users = self._get_user_list(id, context)
-        except (tk.ObjectNotFound, tk.NotAuthorized):
-            tk.abort(404, tk._('Role not found'))
-
-        if context['save'] and tk.request.method == 'POST':
-            user_id = tk.request.params.get('user_id')
-            return self._assign_user_role(id, user_id, context)
-
-        tk.c.role = tk.get_action('role_show')(context, {'id': id})
-        return tk.render('role/users.html')
-
-    def user_unassign(self, id, user_id):
-        context = {'model': model, 'session': model.Session, 'user': tk.c.user}
-        try:
-            if tk.request.method == 'POST':
-                tk.get_action('user_role_unassign')(context, {'role_id': id, 'user_id': user_id})
-                tk.h.flash_notice(tk._('The role has been unassigned from the user.'))
-                tk.h.redirect_to('role_users', id=id)
-        except tk.NotAuthorized:
-            tk.abort(403, tk._('Unauthorized to unassign roles'))
-        except tk.ObjectNotFound:
-            tk.abort(404, tk._('Role not found'))
-
-    @staticmethod
-    def _get_user_list(id, context):
-        all_users = tk.get_action('user_list')(context, {'all_fields': False})
-        assigned_users = tk.get_action('role_user_list')(context, {'role_id': id})
-        user_list = []
-        for user in all_users:
-            user_list += [{
-                'name': user,
-                'assigned': user in assigned_users,
-            }]
-        user_list.sort()
-        return user_list
-
     @staticmethod
     def _get_permission_list(id, context):
         all_permissions = tk.get_action('permission_list')(context, {})
@@ -267,18 +226,6 @@ class RoleController(tk.BaseController):
             model.repo.commit()
             tk.h.redirect_to('role_read', id=id)
 
-        except tk.ObjectNotFound:
-            tk.abort(404, tk._('Role not found'))
-        except tk.NotAuthorized, e:
-            tk.abort(403, e.message)
-        except dict_fns.DataError:
-            tk.abort(400, tk._(u'Integrity Error'))
-
-    def _assign_user_role(self, id, user_id, context):
-        try:
-            tk.get_action('user_role_assign')(context, {'role_id': id, 'user_id': user_id})
-            tk.h.flash_notice(tk._('The role has been assigned to the user.'))
-            tk.h.redirect_to('role_users', id=id)
         except tk.ObjectNotFound:
             tk.abort(404, tk._('Role not found'))
         except tk.NotAuthorized, e:

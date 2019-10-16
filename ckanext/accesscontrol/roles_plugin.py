@@ -32,8 +32,6 @@ class RolesPlugin(p.SingletonPlugin):
             m.connect('role_about', '/role/about/{id}', action='about', ckan_icon='info-circle')
             m.connect('role_activity', '/role/activity/{id}', action='activity', ckan_icon='clock-o')
             m.connect('role_permissions', '/role/permissions/{id}', action='permissions', ckan_icon='shield')
-            m.connect('role_users', '/role/users/{id}', action='users', ckan_icon='users')
-            m.connect('/role/users/{id}/unassign/{user_id}', action='user_unassign')
 
         return map
 
@@ -101,8 +99,6 @@ class RolesPlugin(p.SingletonPlugin):
             'role_permission_list': action.role_permission_list,
             'user_role_assign': action.user_role_assign,
             'user_role_unassign': action.user_role_unassign,
-            'user_role_list': action.user_role_list,
-            'role_user_list': action.role_user_list,
             'permission_list': action.permission_list,
             'permission_define': permission_setup_actions.permission_define,
             'permission_undefine': permission_setup_actions.permission_undefine,
@@ -122,8 +118,6 @@ class RolesPlugin(p.SingletonPlugin):
             'role_permission_list': auth.role_permission_list,
             'user_role_assign': auth.user_role_assign,
             'user_role_unassign': auth.user_role_unassign,
-            'user_role_list': auth.user_role_list,
-            'role_user_list': auth.role_user_list,
             'permission_list': auth.permission_list,
             'permission_define': auth.permission_define,
             'permission_undefine': auth.permission_undefine,

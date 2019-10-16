@@ -56,16 +56,6 @@ def user_role_unassign(context, data_dict):
     return {'success': False}
 
 
-def user_role_list(context, data_dict):
-    # sysadmins only
-    return {'success': False}
-
-
-def role_user_list(context, data_dict):
-    # sysadmins only
-    return {'success': False}
-
-
 def permission_list(context, data_dict):
     # sysadmins only
     return {'success': False}
