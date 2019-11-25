@@ -109,13 +109,17 @@ def logout():
     """
     log.debug("Logout initiated")
     _forget_login()
-    user_id = tk.c.userobj.id
+    user_id = tk.c.userobj.id if tk.c.userobj else None
     token = _load_token(user_id)
     id_token = token.get('id_token') if token else ''
-    logout_url = config.endsession_endpoint + \
-                 '?post_logout_redirect_uri=' + config.postlogout_redirect_url + \
-                 '&id_token_hint=' + id_token
-    tk.redirect_to(logout_url)
+    if id_token:
+        logout_url = config.endsession_endpoint + \
+                     '?post_logout_redirect_uri=' + config.postlogout_redirect_url + \
+                     '&id_token_hint=' + id_token
+        tk.redirect_to(logout_url)
+    else:
+        # if we don't have an id token then we cannot logout from the auth server; so just do a local logout
+        tk.redirect_to(config.ckan_url)
 
 
 def logged_out():
@@ -162,6 +166,8 @@ def _load_token(user_id):
     """
     Retrieve a user's auth token from Redis.
     """
+    if not user_id:
+        return {}
     redis = connect_to_redis()
     key = 'oidc_token:' + user_id
     token = redis.get(key) or '{}'
