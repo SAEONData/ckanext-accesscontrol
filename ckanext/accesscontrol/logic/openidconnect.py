@@ -66,7 +66,19 @@ def login():
     """
     log.debug("Login initiated")
     oauth2session = OAuth2Session(client_id=config.client_id, scope=config.scopes, redirect_uri=config.redirect_url)
-    authorization_url, state = oauth2session.authorization_url(config.authorization_endpoint)
+    authorization_url, state = oauth2session.authorization_url(config.authorization_endpoint, mode='login')
+    _save_state(state)
+    tk.redirect_to(authorization_url)
+
+
+def register():
+    """
+    The process is identical to a login, from CKAN's perspective. Once signup is complete, the user
+    will be authenticated and we'll get an OAuth2 callback.
+    """
+    log.debug("Signup initiated")
+    oauth2session = OAuth2Session(client_id=config.client_id, scope=config.scopes, redirect_uri=config.redirect_url)
+    authorization_url, state = oauth2session.authorization_url(config.authorization_endpoint, mode='signup')
     _save_state(state)
     tk.redirect_to(authorization_url)
 

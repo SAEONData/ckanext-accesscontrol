@@ -12,6 +12,12 @@ class OpenIDConnectController(tk.BaseController):
         """
         openidconnect.login()
 
+    def register(self):
+        """
+        A user has clicked the "Register" link in the CKAN UI.
+        """
+        openidconnect.register()
+
     def callback(self):
         """
         Callback from the auth server after the user has logged in.

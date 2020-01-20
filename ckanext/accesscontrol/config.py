@@ -60,8 +60,6 @@ class AccessControlConfig(object):
         self.api_scope = self._get_option('ckan.openidconnect.api_scope')
         self.api_id = self._get_option('ckan.openidconnect.api_id')
         self.api_secret = self._get_option('ckan.openidconnect.api_secret')
-        self.register_url = self._get_option('ckan.openidconnect.register_url')
-        self.reset_url = self._get_option('ckan.openidconnect.reset_url')
         self.edit_url = self._get_option('ckan.openidconnect.edit_url')
         if self._missing:
             raise AccessControlConfigError("Missing configuration options(s): %s", ', '.join(self._missing))

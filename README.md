@@ -58,8 +58,6 @@ Where a default is not defined, a value **must** be set in the configuration fil
 | ckan.openidconnect.api_scope              | | The scope associated with the API resource that represents the CKAN instance in the auth service.
 | ckan.openidconnect.api_id                 | | The ID of the above API resource.
 | ckan.openidconnect.api_secret             | | The secret specified for the above API resource.
-| ckan.openidconnect.register_url           | | Auth service URL for new user registration.
-| ckan.openidconnect.reset_url              | | Auth service URL for resetting a password.
 | ckan.openidconnect.edit_url               | | Auth service URL for editing a user profile.
 | ckan.openidconnect.insecure_transport     | False | Set to True in a dev environment to permit insecure communication with the auth server. Never set this option in production!
 | ckan.openidconnect.no_verify_ssl_cert     | False | Set to True in a dev environment to not verify the SSL certificate of the auth server. Never set this option in production!
