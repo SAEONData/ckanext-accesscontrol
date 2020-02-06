@@ -318,8 +318,12 @@ def _save_organizations(token_data):
     """
     # make the 'default' sysadmin user the admin of any created organizations
     # note: we use a new context for each action call to avoid CKAN confusion
+    orgs_seen = []
     for privilege in token_data['privileges']:
         org_name = privilege['institution']
+        if org_name in orgs_seen:
+            continue
+        orgs_seen += [org_name]
         org_title = privilege['institution_name']
         try:
             org_dict = tk.get_action('organization_show')({'ignore_auth': True}, {'id': org_name})
@@ -327,8 +331,27 @@ def _save_organizations(token_data):
                 org_dict['title'] = org_title
                 tk.get_action('organization_update')({'ignore_auth': True, 'user': 'default'}, org_dict)
         except tk.ObjectNotFound:
-            tk.get_action('organization_create')({'ignore_auth': True, 'user': 'default'},
-                                                 {'name': org_name, 'title': org_title})
+            org_dict = tk.get_action('organization_create')({'ignore_auth': True, 'user': 'default'},
+                                                            {'name': org_name, 'title': org_title})
+
+        # make the user a member of the organization
+        member_dict = {
+            'id': org_dict['id'],
+            'object': token_data['user_id'],
+            'object_type': 'user',
+            'capacity': 'member',
+        }
+        tk.get_action('member_create')({'ignore_auth': True}, member_dict)
+
+        # make the user an editor of all of the organization's metadata collections
+        for metadata_collection_name in tk.get_action('metadata_collection_list')({'ignore_auth': True}, {'owner_org': org_name}):
+            member_dict = {
+                'id': metadata_collection_name,
+                'object': token_data['user_id'],
+                'object_type': 'user',
+                'capacity': 'editor',
+            }
+            tk.get_action('member_create')({'ignore_auth': True}, member_dict)
 
 
 def _save_roles(token_data):
