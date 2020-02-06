@@ -239,11 +239,11 @@ def _extract_token_data(token):
         raise OpenIDConnectError(_("Invalid access token"))
 
     privileges = []
-    for privilege in access_token_data.get('ext', {}).get('privileges', []):
-        if privilege.get('scope') == config.api_scope:
-            institution = privilege.get('institution')
+    for privilege in access_token_data.get('ext', {}).get('access_rights', []):
+        if privilege.get('scope_key') == config.api_scope:
+            institution = privilege.get('institution_key')
             institution_name = privilege.get('institution_name', institution)
-            role = privilege.get('role')
+            role = privilege.get('role_key')
             role_name = privilege.get('role_name', role)
             if not institution or not role:
                 raise OpenIDConnectError(_("Invalid access token"))
