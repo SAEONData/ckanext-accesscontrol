@@ -6,7 +6,6 @@ from six.moves.urllib.parse import urljoin
 from paste.deploy.converters import asbool
 
 from ckan.common import config as ckan_config
-from ckan.lib.redis import is_redis_available
 
 log = logging.getLogger(__name__)
 
@@ -36,9 +35,6 @@ class AccessControlConfig(object):
         """
         Load the config options specifically used by the openidconnect plugin.
         """
-        if not is_redis_available():
-            raise AccessControlConfigError("The openidconnect plugin requires Redis")
-
         if asbool(ckan_config.get('ckan.openidconnect.insecure_transport')):
             if not asbool(os.environ.get('OAUTHLIB_INSECURE_TRANSPORT')):
                 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
