@@ -7,6 +7,7 @@ from requests_oauthlib import OAuth2Session
 from oauthlib.oauth2 import OAuth2Error
 from requests import RequestException
 from sqlalchemy.sql import select
+import time
 
 import ckan.plugins.toolkit as tk
 from ckan.common import _
@@ -45,6 +46,7 @@ def identify():
         token = {'access_token': auth_header[7:]}
         try:
             token_data = _extract_token_data(token)
+            _save_token_data(token_data)
             _save_objects(token_data)
             tk.c.user = token_data['email']
         except anyAuthException, e:
@@ -105,6 +107,7 @@ def callback():
         token_data = _extract_token_data(token)
         user_id = token_data['user_id']
         _save_token(user_id, token)
+        _save_token_data(token_data)
         _save_objects(token_data)
         _remember_login(user_id)
 
@@ -168,10 +171,10 @@ def _save_token(user_id, token):
     """
     Save a user's auth token to Redis, with the expiry time specified within the token.
     """
-    expiry_time = token.get('expires_in', 300)
+    expires_in = token.get('expires_in', 300)
     redis = connect_to_redis()
     key = 'oidc_token:' + user_id
-    redis.setex(key, json.dumps(token), expiry_time)
+    redis.setex(key, json.dumps(token), expires_in)
 
 
 def _load_token(user_id):
@@ -208,6 +211,7 @@ def _extract_token_data(token):
                 'role'
                 'role_name'
             }]
+            'expiry_timestamp'
         }
     """
     # get access token data from the introspection endpoint
@@ -261,7 +265,18 @@ def _extract_token_data(token):
         'lastname': lastname,
         'superuser': superuser,
         'privileges': privileges,
+        'expiry_timestamp': access_token_data['exp'],
     }
+
+
+def _save_token_data(token_data):
+    """
+    Save the token data to redis.
+    """
+    expires_in = int(token_data['expiry_timestamp'] - time.time())
+    redis = connect_to_redis()
+    key = 'oidc_token_data:' + token_data['user_id']
+    redis.setex(key, json.dumps(token_data), expires_in)
 
 
 def _save_objects(token_data):
@@ -270,8 +285,8 @@ def _save_objects(token_data):
     """
     _save_user(token_data)
     _save_organizations(token_data)
-    _save_roles(token_data)
-    _save_privileges(token_data)
+    # _save_roles(token_data)
+    # _save_privileges(token_data)
 
 
 def _save_user(token_data):
@@ -357,6 +372,9 @@ def _save_organizations(token_data):
 def _save_roles(token_data):
     """
     Create or update any roles referenced in the token privileges.
+
+    DEPRECATED.
+
     """
     try:
         role_show = tk.get_action('role_show')
@@ -381,6 +399,9 @@ def _save_roles(token_data):
 def _save_privileges(token_data):
     """
     Synchronize the CKAN user's role assignments with those specified in the token.
+
+    DEPRECATED.
+
     """
     try:
         user_role_assign = tk.get_action('user_role_assign')
