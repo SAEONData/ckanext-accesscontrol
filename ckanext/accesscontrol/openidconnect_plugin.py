@@ -9,6 +9,7 @@ class OpenIDConnectPlugin(p.SingletonPlugin):
 
     p.implements(p.IRoutes, inherit=True)
     p.implements(p.IAuthenticator, inherit=True)
+    p.implements(p.ITemplateHelpers)
 
     def before_map(self, map):
         """
@@ -34,3 +35,8 @@ class OpenIDConnectPlugin(p.SingletonPlugin):
         Identify the user who is making the call to CKAN.
         """
         openidconnect.identify()
+
+    def get_helpers(self):
+        return {
+            'access_token': openidconnect.get_access_token
+        }

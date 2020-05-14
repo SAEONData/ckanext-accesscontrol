@@ -481,3 +481,12 @@ def _forget_login():
     headers = rememberer.forget(environ, None)
     for header, value in headers:
         tk.response.headers.add(header, value)
+
+
+def get_access_token():
+    """
+    Helper function for retrieving the current user's access token.
+    """
+    user_id = tk.c.userobj.id if tk.c.userobj else None
+    token = _load_token(user_id)
+    return token.get('access_token')
