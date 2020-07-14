@@ -225,17 +225,12 @@ def _extract_token_data(token):
     if not valid:
         raise OpenIDConnectError(_("Invalid access token"))
 
-    # get id token data from the userinfo endpoint
-    oauth2session = OAuth2Session(token=token)
-    response = oauth2session.get(config.userinfo_endpoint, verify=not config.no_verify_ssl_cert)
-    response.raise_for_status()
-    id_token_data = response.json()
-
-    user_id = access_token_data.get('sub')
-    email = id_token_data.get('email')
-    firstname = id_token_data.get('firstname', '')
-    lastname = id_token_data.get('lastname', '')
+    user_id = access_token_data.get('ext', {}).get('user_id')
+    email = access_token_data.get('ext', {}).get('email')
     if not user_id or not email:
+        raise OpenIDConnectError(_("Invalid access token"))
+
+    if user_id != access_token_data.get('sub'):
         raise OpenIDConnectError(_("Invalid access token"))
 
     superuser = access_token_data.get('ext', {}).get('superuser', False)
@@ -258,11 +253,21 @@ def _extract_token_data(token):
                 'role_name': role_name,
             }]
 
+    # # we're not currently using any id token data
+    # # get id token data from the userinfo endpoint
+    # oauth2session = OAuth2Session(token=token)
+    # response = oauth2session.get(config.userinfo_endpoint, verify=not config.no_verify_ssl_cert)
+    # response.raise_for_status()
+    # id_token_data = response.json()
+    #
+    # firstname = id_token_data.get('firstname', '')
+    # lastname = id_token_data.get('lastname', '')
+
     return {
         'user_id': user_id,
         'email': email,
-        'firstname': firstname,
-        'lastname': lastname,
+        'firstname': '',
+        'lastname': '',
         'superuser': superuser,
         'privileges': privileges,
         'expiry_timestamp': access_token_data['exp'],
